@@ -1,0 +1,19 @@
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
+}
+
+h1 {
+  margin: 0 auto;
+}
+
+.map-container {
+  margin: 40px auto;
+}
+
+.map {
+  height: 500px;
+  width: 500px;
+}

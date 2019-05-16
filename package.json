@@ -1,0 +1,30 @@
+{
+  "name": "poly2geohash",
+  "version": "1.0.0",
+  "description": "Turns a polygon into a list of geohashes",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcelreppi/poly2geohash.git"
+  },
+  "keywords": [
+    "geohash",
+    "polygon"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcelreppi/poly2geohash/issues"
+  },
+  "homepage": "https://github.com/marcelreppi/poly2geohash#readme",
+  "dependencies": {
+    "@turf/bbox-polygon": "^6.0.1",
+    "@turf/centroid": "^6.0.2",
+    "@turf/helpers": "^6.1.4",
+    "@turf/intersect": "^6.1.3",
+    "ngeohash": "^0.6.3"
+  }
+}
