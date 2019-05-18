@@ -8,10 +8,10 @@ function initMaps() {
     zoom: 9.5,
   })
 
-  const coordinates = polygon.map(([lat, long]) => {
+  const coordinates = polygon.map(([lng, lat]) => {
     return {
       lat,
-      lng: long,
+      lng,
     }
   })
 
@@ -40,7 +40,7 @@ function initMaps() {
       strokeOpacity: 0.3,
       strokeWeight: 2,
       fillColor: "#25c3fc",
-      fillOpacity: 0.1,
+      fillOpacity: 0.2,
     })
     geohashPolygon.setMap(map)
   })

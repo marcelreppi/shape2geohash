@@ -1,33 +1,59 @@
 const fs = require("fs")
+const path = require("path")
 const { default: turfCentroid } = require("@turf/centroid")
 const { polygon: turfPolygon } = require("@turf/helpers")
 
 const berlin = require("./berlin")
 const poly2geohash = require("../index")
 
-const polygon = berlin.fields.geo_shape.coordinates[0].map(([long, lat]) => [
-  lat,
-  long,
-])
+const polygon = berlin.fields.geo_shape.coordinates[0]
 
-// const polygon = [
-//   [52.5, 13.0], //[lat, long]
-//   [52.5, 13.3],
-//   [52.2, 13.3],
-//   [52.2, 13.0],
-//   [52.5, 13.0], // make sure the last coordinate is equal to the first one
-// ]
+async function testPoly2Geohash() {
+  const a = new Date()
+  const hashes = await poly2geohash([polygon], 6)
+  const b = new Date()
+  console.log("poly2geohash")
+  console.log("duration:", b.getTime() - a.getTime() + "ms")
+  console.log("#geohashes:", hashes.length)
+  console.log()
+  console.log(
+    `Open ${path.resolve(
+      "./test/visualization/index.html"
+    )} to see the visual result`
+  )
 
-const centroid = turfCentroid(turfPolygon([polygon])).geometry.coordinates
+  if (hashes.length !== new Set(hashes).size) {
+    console.log()
+    console.log("Found duplicates")
+    const uniq = hashes
+      .map(name => {
+        return {
+          count: 1,
+          name: name,
+        }
+      })
+      .reduce((a, b) => {
+        a[b.name] = (a[b.name] || 0) + b.count
+        return a
+      }, {})
 
-const geohashes = poly2geohash(polygon)
+    const duplicates = Object.keys(uniq).filter(a => uniq[a] > 1)
+    console.log(duplicates)
+  }
 
-const dataString = `
-const polygon = ${JSON.stringify(polygon)}
+  let centroid = turfCentroid(
+    turfPolygon([polygon])
+  ).geometry.coordinates.reverse()
 
-const geohashes = ${JSON.stringify(geohashes)}
+  const dataString = `
+  const polygon = ${JSON.stringify(polygon)}
 
-const mapCenter = ${JSON.stringify(centroid)}
-`
+  const geohashes = ${JSON.stringify(hashes)}
 
-fs.writeFileSync("./test/visualization/data.js", dataString)
+  const mapCenter = ${JSON.stringify(centroid)}
+  `
+
+  fs.writeFileSync("./test/visualization/data.js", dataString)
+}
+
+testPoly2Geohash()
