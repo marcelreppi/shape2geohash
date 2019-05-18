@@ -1,12 +1,11 @@
 const { polygon: turfPolygon } = require("@turf/helpers")
-const { default: turfIntersect } = require("@turf/intersect")
 const { default: turfBboxPolygon } = require("@turf/bbox-polygon")
 const { default: turfBbox } = require("@turf/bbox")
 const { default: turfEnvelope } = require("@turf/envelope")
+const { default: turfIntersect } = require("@turf/intersect")
 const { default: turfBooleanOverlap } = require("@turf/boolean-overlap")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
-const through2 = require("through2")
 
 function switchBbox(bbox) {
   const [y1, x1, y2, x2] = bbox
@@ -174,12 +173,15 @@ function poly2geohash(polygon, precision = 5) {
     return new Promise((resolve, reject) => {
       const geohashStream = new GeohashStream(polygon, precision)
 
-      geohashStream.pipe(
-        through2.obj((hashes, enc, callback) => {
-          allGeohashes.push(...hashes)
+      const writer = new Stream.Writable({
+        objectMode: true,
+        write: (rowGeohashes, enc, callback) => {
+          allGeohashes.push(...rowGeohashes)
           callback()
-        })
-      )
+        },
+      })
+
+      geohashStream.pipe(writer) // Kick off the stream
 
       geohashStream.on("end", () => {
         resolve()
