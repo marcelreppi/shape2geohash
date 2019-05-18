@@ -4,6 +4,7 @@ const { default: turfBboxPolygon } = require("@turf/bbox-polygon")
 const { default: turfBbox } = require("@turf/bbox")
 const { default: turfCentroid } = require("@turf/centroid")
 const { default: turfEnvelope } = require("@turf/envelope")
+const { default: turfBooleanOverlap } = require("@turf/boolean-overlap")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
 const async = require("async")
@@ -115,42 +116,39 @@ function poly2geohashBox(coordinates, precision = 5) {
   // logGeoJSON(turfEnvelope(originalPolygon))
   // console.log(envelopeBbox)
 
-  const topLeftHash = ngeohash.encode(
+  const mostLeftGeohash = ngeohash.encode(
     envelopeBbox[3],
     envelopeBbox[0],
     precision
   )
 
   const geohashList = []
-  const geohashQueue = [{ geohash: topLeftHash, dir: "se" }]
 
-  while (geohashQueue.length !== 0) {
-    const geohashObj = geohashQueue.pop()
-    const hashPolygon = turfBboxPolygon(
-      switchBbox(ngeohash.decode_bbox(geohashObj.geohash))
+  let currentGeohash = mostLeftGeohash
+
+  while (true) {
+    const geohashPolygon = turfBboxPolygon(
+      switchBbox(ngeohash.decode_bbox(currentGeohash))
     )
 
-    // Check if it intersects with original polygon
-    const intersection = turfIntersect(originalPolygon, hashPolygon)
-
-    // logGeoJSON(intersection)
+    // Check if geohash overlaps with original polygon
+    const overlap = turfBooleanOverlap(originalPolygon, geohashPolygon)
 
     // If yes -> add it to the list of outer geohashes
     // If no -> continue with next geohash
-    if (intersection) {
-      geohashList.push(geohashObj.geohash)
+    if (overlap) {
+      geohashList.push(currentGeohash)
     }
 
-    const [minX, minY, maxX, maxY] = hashPolygon.bbox
-    if (maxX > envelopeBbox[2] || minY < envelopeBbox[1] - 1) {
-      continue
+    const maxX = geohashPolygon.bbox[2]
+    if (maxX > envelopeBbox[2]) {
+      // If right edge of current geohash is out of bounds we are done
+      currentGeohash = null
+      break
     }
 
-    // Get specific neighbors of current geohash
-    const neighbors = getNeighbors(geohashObj)
-
-    // Add them to the queue
-    geohashQueue.push(...neighbors)
+    // Get eastern neighbor and set him as next geohash to be checked
+    currentGeohash = ngeohash.neighbor(currentGeohash, [0, 1])
   }
 
   return geohashList
@@ -177,11 +175,29 @@ class GeohashStream extends Stream.Readable {
       )
     )
 
-    this.rowWidth = Math.abs(originalEnvelopeBbox[2] - originalEnvelopeBbox[0])
+    // [minX, minY, maxX, maxY]
+    const bottomRightGeohashBbox = switchBbox(
+      ngeohash.decode_bbox(
+        ngeohash.encode(
+          originalEnvelopeBbox[1],
+          originalEnvelopeBbox[2],
+          precision
+        )
+      )
+    )
+
+    const extendedEnvelopeBbox = [
+      topLeftGeohashBbox[0],
+      bottomRightGeohashBbox[1],
+      bottomRightGeohashBbox[2],
+      topLeftGeohashBbox[3],
+    ]
+
+    this.rowWidth = Math.abs(extendedEnvelopeBbox[2] - extendedEnvelopeBbox[0])
     this.geohashHeight = Math.abs(topLeftGeohashBbox[3] - topLeftGeohashBbox[1])
 
-    this.currentPoint = [originalEnvelopeBbox[0], originalEnvelopeBbox[3]]
-    this.bottomLimit = originalEnvelopeBbox[1]
+    this.currentPoint = [extendedEnvelopeBbox[0], extendedEnvelopeBbox[3]]
+    this.bottomLimit = extendedEnvelopeBbox[1]
   }
 
   processNextRow() {
@@ -199,6 +215,7 @@ class GeohashStream extends Stream.Readable {
     // logGeoJSON(rowPolygon)
 
     const intersectionGeoJSON = turfIntersect(this.originalPolygon, rowPolygon)
+    // console.log("intersection")
     // logGeoJSON(intersectionGeoJSON)
     let geohashes = []
     if (intersectionGeoJSON !== null) {
