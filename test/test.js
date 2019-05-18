@@ -10,7 +10,7 @@ const polygon = berlin.fields.geo_shape.coordinates[0]
 
 async function testPoly2Geohash() {
   const a = new Date()
-  const hashes = await poly2geohash([polygon], 6)
+  const hashes = await poly2geohash([polygon])
   const b = new Date()
   console.log("poly2geohash")
   console.log("duration:", b.getTime() - a.getTime() + "ms")

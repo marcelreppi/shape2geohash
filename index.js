@@ -128,8 +128,6 @@ class GeohashStream extends Stream.Readable {
         switchBbox(ngeohash.decode_bbox(currentGeohash))
       )
 
-      // logGeoJSON(originalPolygon)
-
       // Check if geohash polygon overlaps/intersects with original polygon
       // I need to check both because of some weird bug with turf
       const overlap =
@@ -165,13 +163,18 @@ class GeohashStream extends Stream.Readable {
   }
 }
 
-function poly2geohash(polygon, precision = 5) {
-  const allPolygons = isMulti(polygon) ? polygon : [polygon] // make sure allPolygons is always an array
+const defaultOptions = {
+  precision: 6,
+}
+
+function poly2geohash(polygons, options = {}) {
+  options = { ...defaultOptions, ...options } // overwrite default options
+  const allPolygons = isMulti(polygons) ? polygons : [polygons] // make sure allPolygons is always an array
   const allGeohashes = []
 
   allPolygons.map(polygon => {
     return new Promise((resolve, reject) => {
-      const geohashStream = new GeohashStream(polygon, precision)
+      const geohashStream = new GeohashStream(polygon, options.precision)
 
       const writer = new Stream.Writable({
         objectMode: true,
