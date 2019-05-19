@@ -1,6 +1,6 @@
 {
   "name": "shape2geohash",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Turns any GeoJSON shape into a list of geohashes",
   "main": "index.js",
   "scripts": {
