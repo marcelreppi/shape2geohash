@@ -1,6 +1,6 @@
 # shape2geohash
 
-A small library that turns any GeoJSON shape **(polygon(s) or lines)** into a list of geohashes.
+A small library that turns any GeoJSON shape **(polygons or lines)** into a list of geohashes.
 
 
 ## Installation
