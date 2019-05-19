@@ -1,11 +1,12 @@
-const { polygon: turfPolygon } = require("@turf/helpers")
+const { polygon: turfPolygon, lineString: turfLine } = require("@turf/helpers")
 const { default: turfBboxPolygon } = require("@turf/bbox-polygon")
 const { default: turfBbox } = require("@turf/bbox")
 const { default: turfEnvelope } = require("@turf/envelope")
 const { default: turfIntersect } = require("@turf/intersect")
 const { default: turfBooleanOverlap } = require("@turf/boolean-overlap")
 const { default: turfBooleanWithin } = require("@turf/boolean-within")
-const { default: turfBooleanContains } = require("@turf/boolean-contains")
+const { default: turfLineToPolygon } = require("@turf/line-to-polygon")
+const { default: turfLineSplit } = require("@turf/line-split")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
 
@@ -22,13 +23,19 @@ function logGeoJSON(geojson) {
   console.log(JSON.stringify(geojson))
 }
 
+function isLine(coordinates) {
+  return !Array.isArray(coordinates[0][0])
+}
+
 class GeohashStream extends Stream.Readable {
-  constructor(geoJSON, options) {
+  constructor(shapeCoordinates, options) {
     super({ objectMode: true })
 
     this.options = options
 
-    this.originalPolygon = turfPolygon(geoJSON)
+    this.originalPolygon = isLine(shapeCoordinates)
+      ? turfLineToPolygon(turfLine(shapeCoordinates))
+      : turfPolygon(shapeCoordinates)
 
     // [minX, minY, maxX, maxY]
     const originalEnvelopeBbox = turfBbox(turfEnvelope(this.originalPolygon))
@@ -165,6 +172,20 @@ class GeohashStream extends Stream.Readable {
           addGeohash =
             turfBooleanOverlap(segmentPolygon, geohashPolygon) &&
             !turfBooleanWithin(geohashPolygon, this.originalPolygon)
+
+          if (this.options.lineReference !== undefined && addGeohash) {
+            // If user passed in a line there is a lineReference
+            // Because the input line is turned into a polygon, there is a line in the polygon that needs to be ignored
+            // Check if the geohash polygon intersects with the original line (lineReference)
+            const lineSegments = turfLineSplit(
+              this.options.lineReference,
+              geohashPolygon
+            )
+            // If there is no intersection, don't add the geohash
+            if (lineSegments.features.length === 0) {
+              addGeohash = false
+            }
+          }
           break
         default:
           break
@@ -179,7 +200,8 @@ class GeohashStream extends Stream.Readable {
       }
 
       // Save rowProgress
-      this.rowProgress = turfBbox(geohashPolygon)[2] // maxX
+      // maxX plus some small amount to avoid overlapping edges due to lat/long inaccuracies
+      this.rowProgress = turfBbox(geohashPolygon)[2] + 0.0001
 
       const maxX = geohashPolygon.bbox[2]
       if (maxX > envelopeBbox[2]) {
@@ -210,14 +232,18 @@ const defaultOptions = {
   hashMode: "intersect",
 }
 
-async function poly2geohash(polygons, options = {}) {
+async function shape2geohash(shapes, options = {}) {
   options = { ...defaultOptions, ...options } // overwrite default options
-  const allPolygons = isMulti(polygons) ? polygons : [polygons] // make sure allPolygons is always an array
+  const allShapes = isMulti(shapes) ? shapes : [shapes] // make sure allShapes is always an array
   const allGeohashes = []
 
-  const allPolygonPromises = allPolygons.map(polygon => {
+  const allShapePromises = allShapes.map(shape => {
     return new Promise((resolve, reject) => {
-      const geohashStream = new GeohashStream(polygon, options)
+      if (isLine(shape)) {
+        options.lineReference = turfLine([...shape]) // Make deep copy and use it later to only add geohashes that are on the line
+        options.hashMode = "border" // Turn on border mode
+      }
+      const geohashStream = new GeohashStream(shape, options)
 
       const writer = new Stream.Writable({
         objectMode: true,
@@ -235,7 +261,7 @@ async function poly2geohash(polygons, options = {}) {
     })
   })
 
-  return Promise.all(allPolygonPromises).then(() => allGeohashes)
+  return Promise.all(allShapePromises).then(() => allGeohashes)
 }
 
-module.exports = poly2geohash
+module.exports = shape2geohash

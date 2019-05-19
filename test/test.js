@@ -5,7 +5,7 @@ const { default: turfCentroid } = require("@turf/centroid")
 const { polygon: turfPolygon } = require("@turf/helpers")
 
 const berlin = require("./berlin")
-const poly2geohash = require("../index")
+const shape2geohash = require("../index")
 
 const polygon = berlin.fields.geo_shape.coordinates[0]
 
@@ -32,11 +32,11 @@ function checkForDuplicates(geohashes) {
 
 let centroid = turfCentroid(turfPolygon([polygon])).geometry.coordinates
 let a, b, geohashes
-async function testPoly2Geohash() {
+async function testShape2Geohash() {
   a = new Date()
-  geohashes = await poly2geohash([polygon])
+  geohashes = await shape2geohash([polygon])
   b = new Date()
-  console.log("poly2geohash (intersect)")
+  console.log("shape2geohash (intersect)")
   console.log("duration:", b.getTime() - a.getTime() + "ms")
   console.log("#geohashes:", geohashes.length)
   checkForDuplicates(geohashes)
@@ -50,9 +50,9 @@ async function testPoly2Geohash() {
   })
 
   a = new Date()
-  geohashes = await poly2geohash([polygon], { hashMode: "envelope" })
+  geohashes = await shape2geohash([polygon], { hashMode: "envelope" })
   b = new Date()
-  console.log("poly2geohash (envelope)")
+  console.log("shape2geohash (envelope)")
   console.log("duration:", b.getTime() - a.getTime() + "ms")
   console.log("#geohashes:", geohashes.length)
   console.log()
@@ -67,12 +67,12 @@ async function testPoly2Geohash() {
   })
 
   a = new Date()
-  geohashes = await poly2geohash([polygon], {
+  geohashes = await shape2geohash([polygon], {
     hashMode: "insideOnly",
     precision: 5,
   })
   b = new Date()
-  console.log("poly2geohash (insideOnly)")
+  console.log("shape2geohash (insideOnly)")
   console.log("duration:", b.getTime() - a.getTime() + "ms")
   console.log("#geohashes:", geohashes.length)
   console.log()
@@ -87,9 +87,9 @@ async function testPoly2Geohash() {
   })
 
   a = new Date()
-  geohashes = await poly2geohash([polygon], { hashMode: "border" })
+  geohashes = await shape2geohash([polygon], { hashMode: "border" })
   b = new Date()
-  console.log("poly2geohash (border)")
+  console.log("shape2geohash (border)")
   console.log("duration:", b.getTime() - a.getTime() + "ms")
   console.log("#geohashes:", geohashes.length)
   console.log()
@@ -101,6 +101,27 @@ async function testPoly2Geohash() {
     geohashes,
     centroid,
     description: "hashMode: border",
+  })
+
+  a = new Date()
+  geohashes = await shape2geohash([
+    [13.226165771484375, 52.56049054341193],
+    [13.546142578125, 52.44596613327885],
+    [13.53515625, 52.532931647583325],
+  ])
+  b = new Date()
+  console.log("shape2geohash (line)")
+  console.log("duration:", b.getTime() - a.getTime() + "ms")
+  console.log("#geohashes:", geohashes.length)
+  console.log()
+  checkForDuplicates(geohashes)
+  console.log("-------------------------------------------\n")
+
+  maps.push({
+    polygon,
+    geohashes,
+    centroid,
+    description: "line",
   })
 
   console.log(
@@ -116,4 +137,4 @@ async function testPoly2Geohash() {
   fs.writeFileSync("./test/visualization/data.js", dataString)
 }
 
-testPoly2Geohash()
+testShape2Geohash()
