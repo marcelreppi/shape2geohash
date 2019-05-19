@@ -4,6 +4,8 @@ const { default: turfBbox } = require("@turf/bbox")
 const { default: turfEnvelope } = require("@turf/envelope")
 const { default: turfIntersect } = require("@turf/intersect")
 const { default: turfBooleanOverlap } = require("@turf/boolean-overlap")
+const { default: turfBooleanWithin } = require("@turf/boolean-within")
+const { default: turfBooleanContains } = require("@turf/boolean-contains")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
 
@@ -21,10 +23,10 @@ function logGeoJSON(geojson) {
 }
 
 class GeohashStream extends Stream.Readable {
-  constructor(geoJSON, precision) {
+  constructor(geoJSON, options) {
     super({ objectMode: true })
 
-    this.precision = precision
+    this.options = options
 
     this.originalPolygon = turfPolygon(geoJSON)
 
@@ -37,7 +39,7 @@ class GeohashStream extends Stream.Readable {
         ngeohash.encode(
           originalEnvelopeBbox[3],
           originalEnvelopeBbox[0],
-          precision
+          this.options.precision
         )
       )
     )
@@ -48,7 +50,7 @@ class GeohashStream extends Stream.Readable {
         ngeohash.encode(
           originalEnvelopeBbox[1],
           originalEnvelopeBbox[2],
-          precision
+          this.options.precision
         )
       )
     )
@@ -71,6 +73,11 @@ class GeohashStream extends Stream.Readable {
 
     // Bottom border of the extended geohash envelope
     this.bottomLimit = geohashEnvelopeBbox[1]
+
+    // Used in processRowSegment to keep track of how much area of the row
+    // has been covered by the matching geohashes
+    // Prevent duplicate geohashes
+    this.rowProgress = -Infinity
   }
 
   processNextRow() {
@@ -87,57 +94,92 @@ class GeohashStream extends Stream.Readable {
       this.currentPoint[1],
     ])
 
-    // Calculate the intersection between the row and the original polygon
-    const intersectionGeoJSON = turfIntersect(this.originalPolygon, rowPolygon)
-
     let geohashes = [] // Geohashes for this row
-    if (intersectionGeoJSON !== null) {
-      let coordinates = intersectionGeoJSON.geometry.coordinates
-      coordinates = isMulti(coordinates) ? coordinates : [coordinates]
 
-      // Check every intersection part for geohashes
-      coordinates.forEach(polygon => {
-        geohashes.push(...this.checkRowSegment(polygon))
-      })
+    if (this.options.hashMode === "envelope") {
+      geohashes.push(...this.processRowSegment(rowPolygon.geometry.coordinates))
+    } else {
+      // Calculate the intersection between the row and the original polygon
+      const intersectionGeoJSON = turfIntersect(
+        this.originalPolygon,
+        rowPolygon
+      )
+      if (intersectionGeoJSON !== null) {
+        let coordinates = intersectionGeoJSON.geometry.coordinates
+        coordinates = isMulti(coordinates) ? coordinates : [coordinates]
+
+        // Check every intersection part for geohashes
+        coordinates.forEach(polygon => {
+          geohashes.push(...this.processRowSegment(polygon))
+        })
+      }
     }
 
     // Move one row lower
     this.currentPoint[1] -= this.geohashHeight
 
+    // Reset rowProgress
+    this.rowProgress = -Infinity
+
     return geohashes
   }
 
-  checkRowSegment(coordinates) {
+  // Returns all the geohashes that are within the current row
+  processRowSegment(coordinates) {
     // Convert coordinates into polygon object
-    const originalPolygon = turfPolygon(coordinates)
-    const envelopeBbox = turfBbox(turfEnvelope(originalPolygon))
+    const segmentPolygon = turfPolygon(coordinates)
+    const envelopeBbox = turfBbox(turfEnvelope(segmentPolygon))
 
-    const mostLeftGeohash = ngeohash.encode(
+    // Most left geohash in box OR the next geohash after current rowProgress
+    const startingGeohash = ngeohash.encode(
       envelopeBbox[3],
-      envelopeBbox[0],
-      this.precision
+      Math.max(this.rowProgress, envelopeBbox[0]),
+      this.options.precision
     )
 
     const geohashList = []
 
     // Checking every geohash in the row from left to right
-    let currentGeohash = mostLeftGeohash
+    let currentGeohash = startingGeohash
 
     while (true) {
       const geohashPolygon = turfBboxPolygon(
         switchBbox(ngeohash.decode_bbox(currentGeohash))
       )
 
+      let addGeohash = false
+      switch (this.options.hashMode) {
+        case "intersect":
+          // Only add geohash if they intersect with the original polygon
+          addGeohash = turfBooleanOverlap(segmentPolygon, geohashPolygon)
+          break
+        case "envelope":
+          addGeohash = true // add every geohash
+          break
+        case "insideOnly":
+          // Only add geohash if it is completely within the original polygon
+          addGeohash = turfBooleanWithin(geohashPolygon, this.originalPolygon)
+          break
+        case "border":
+          // Only add geohash if they overlap
+          addGeohash =
+            turfBooleanOverlap(segmentPolygon, geohashPolygon) &&
+            !turfBooleanWithin(geohashPolygon, this.originalPolygon)
+          break
+        default:
+          break
+      }
+
       // Check if geohash polygon overlaps/intersects with original polygon
       // I need to check both because of some weird bug with turf
-      const overlap =
-        turfBooleanOverlap(originalPolygon, geohashPolygon) ||
-        turfIntersect(originalPolygon, geohashPolygon)
 
       // If yes -> add it to the list of geohashes
-      if (overlap) {
+      if (addGeohash) {
         geohashList.push(currentGeohash)
       }
+
+      // Save rowProgress
+      this.rowProgress = turfBbox(geohashPolygon)[2] // maxX
 
       const maxX = geohashPolygon.bbox[2]
       if (maxX > envelopeBbox[2]) {
@@ -165,16 +207,17 @@ class GeohashStream extends Stream.Readable {
 
 const defaultOptions = {
   precision: 6,
+  hashMode: "intersect",
 }
 
-function poly2geohash(polygons, options = {}) {
+async function poly2geohash(polygons, options = {}) {
   options = { ...defaultOptions, ...options } // overwrite default options
   const allPolygons = isMulti(polygons) ? polygons : [polygons] // make sure allPolygons is always an array
   const allGeohashes = []
 
-  allPolygons.map(polygon => {
+  const allPolygonPromises = allPolygons.map(polygon => {
     return new Promise((resolve, reject) => {
-      const geohashStream = new GeohashStream(polygon, options.precision)
+      const geohashStream = new GeohashStream(polygon, options)
 
       const writer = new Stream.Writable({
         objectMode: true,
@@ -192,7 +235,7 @@ function poly2geohash(polygons, options = {}) {
     })
   })
 
-  return Promise.all(allPolygons).then(() => allGeohashes)
+  return Promise.all(allPolygonPromises).then(() => allGeohashes)
 }
 
 module.exports = poly2geohash

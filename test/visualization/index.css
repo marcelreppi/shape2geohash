@@ -9,11 +9,21 @@ h1 {
   margin: 0 auto;
 }
 
-.map-container {
+.maps-container {
   margin: 40px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.single-map-container {
+  height: 500px;
+  width: 500px;
+  margin: 50px;
 }
 
 .map {
   height: 500px;
   width: 500px;
+  margin-bottom: 20px;
 }

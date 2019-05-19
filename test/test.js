@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const fs = require("fs")
 const path = require("path")
 const { default: turfCentroid } = require("@turf/centroid")
@@ -8,49 +9,108 @@ const poly2geohash = require("../index")
 
 const polygon = berlin.fields.geo_shape.coordinates[0]
 
+const maps = []
+
+function checkForDuplicates(geohashes) {
+  const geohashesAsSet = new Set(geohashes)
+  if (geohashes.length !== geohashesAsSet.size) {
+    console.log()
+    console.log("Found duplicates")
+    const unique = []
+    const duplicates = []
+    geohashes.forEach(gh => {
+      if (unique.includes(gh)) {
+        duplicates.push(gh)
+      } else {
+        unique.push(gh)
+      }
+    })
+    console.log(duplicates)
+    console.log()
+  }
+}
+
+let centroid = turfCentroid(turfPolygon([polygon])).geometry.coordinates
+let a, b, geohashes
 async function testPoly2Geohash() {
-  const a = new Date()
-  const hashes = await poly2geohash([polygon])
-  const b = new Date()
-  console.log("poly2geohash")
+  a = new Date()
+  geohashes = await poly2geohash([polygon])
+  b = new Date()
+  console.log("poly2geohash (intersect)")
   console.log("duration:", b.getTime() - a.getTime() + "ms")
-  console.log("#geohashes:", hashes.length)
+  console.log("#geohashes:", geohashes.length)
+  checkForDuplicates(geohashes)
+  console.log("-------------------------------------------\n")
+
+  maps.push({
+    polygon,
+    geohashes,
+    centroid,
+    description: "hashMode: intersect",
+  })
+
+  a = new Date()
+  geohashes = await poly2geohash([polygon], { hashMode: "envelope" })
+  b = new Date()
+  console.log("poly2geohash (envelope)")
+  console.log("duration:", b.getTime() - a.getTime() + "ms")
+  console.log("#geohashes:", geohashes.length)
   console.log()
+  checkForDuplicates(geohashes)
+  console.log("-------------------------------------------\n")
+
+  maps.push({
+    polygon,
+    geohashes,
+    centroid,
+    description: "hashMode: envelope",
+  })
+
+  a = new Date()
+  geohashes = await poly2geohash([polygon], {
+    hashMode: "insideOnly",
+    precision: 5,
+  })
+  b = new Date()
+  console.log("poly2geohash (insideOnly)")
+  console.log("duration:", b.getTime() - a.getTime() + "ms")
+  console.log("#geohashes:", geohashes.length)
+  console.log()
+  checkForDuplicates(geohashes)
+  console.log("-------------------------------------------\n")
+
+  maps.push({
+    polygon,
+    geohashes,
+    centroid,
+    description: "hashMode: insideOnly",
+  })
+
+  a = new Date()
+  geohashes = await poly2geohash([polygon], { hashMode: "border" })
+  b = new Date()
+  console.log("poly2geohash (border)")
+  console.log("duration:", b.getTime() - a.getTime() + "ms")
+  console.log("#geohashes:", geohashes.length)
+  console.log()
+  checkForDuplicates(geohashes)
+  console.log("-------------------------------------------\n")
+
+  maps.push({
+    polygon,
+    geohashes,
+    centroid,
+    description: "hashMode: border",
+  })
+
   console.log(
     `Open ${path.resolve(
       "./test/visualization/index.html"
     )} to see the visual result`
   )
 
-  if (hashes.length !== new Set(hashes).size) {
-    console.log()
-    console.log("Found duplicates")
-    const uniq = hashes
-      .map(name => {
-        return {
-          count: 1,
-          name: name,
-        }
-      })
-      .reduce((a, b) => {
-        a[b.name] = (a[b.name] || 0) + b.count
-        return a
-      }, {})
-
-    const duplicates = Object.keys(uniq).filter(a => uniq[a] > 1)
-    console.log(duplicates)
-  }
-
-  let centroid = turfCentroid(
-    turfPolygon([polygon])
-  ).geometry.coordinates.reverse()
-
   const dataString = `
-  const polygon = ${JSON.stringify(polygon)}
-
-  const geohashes = ${JSON.stringify(hashes)}
-
-  const mapCenter = ${JSON.stringify(centroid)}
+  const maps = ${JSON.stringify(maps, null, 2)}
   `
 
   fs.writeFileSync("./test/visualization/data.js", dataString)
