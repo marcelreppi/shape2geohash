@@ -1,6 +1,6 @@
 {
   "name": "poly2geohash",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Turns a polygon into a list of geohashes",
   "main": "index.js",
   "scripts": {
