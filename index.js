@@ -88,7 +88,7 @@ class GeohashStream extends Stream.Readable {
   }
 
   processNextRow() {
-    if (this.currentPoint[1] < this.bottomLimit) {
+    if (this.currentPoint[1] <= this.bottomLimit) {
       // We have reached the bottom of the polygon
       return null
     }
@@ -140,7 +140,7 @@ class GeohashStream extends Stream.Readable {
     // Most left geohash in box OR the next geohash after current rowProgress
     const startingGeohash = ngeohash.encode(
       envelopeBbox[3],
-      Math.max(this.rowProgress, envelopeBbox[0]),
+      Math.max(this.rowProgress, envelopeBbox[0] + 0.00001), // Add some small long value to avoid edge cases
       this.options.precision
     )
 
@@ -201,10 +201,10 @@ class GeohashStream extends Stream.Readable {
 
       // Save rowProgress
       // maxX plus some small amount to avoid overlapping edges due to lat/long inaccuracies
-      this.rowProgress = turfBbox(geohashPolygon)[2] + 0.0001
+      this.rowProgress = turfBbox(geohashPolygon)[2] + 0.00001
 
       const maxX = geohashPolygon.bbox[2]
-      if (maxX > envelopeBbox[2]) {
+      if (maxX >= envelopeBbox[2]) {
         // If right edge of current geohash is out of bounds we are done
         currentGeohash = null
         break
@@ -239,11 +239,12 @@ async function shape2geohash(shapes, options = {}) {
 
   const allShapePromises = allShapes.map(shape => {
     return new Promise((resolve, reject) => {
-      if (isLine(shape)) {
+      const deepShapeCopy = [...shape]
+      if (isLine(deepShapeCopy)) {
         options.lineReference = turfLine([...shape]) // Make deep copy and use it later to only add geohashes that are on the line
         options.hashMode = "border" // Turn on border mode
       }
-      const geohashStream = new GeohashStream(shape, options)
+      const geohashStream = new GeohashStream(deepShapeCopy, options)
 
       const writer = new Stream.Writable({
         objectMode: true,

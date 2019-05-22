@@ -4,7 +4,8 @@
   "description": "Turns any GeoJSON shape into a list of geohashes",
   "main": "index.js",
   "scripts": {
-    "test": "node ./test/test.js"
+    "test": "node ./test/visual-test.js && jest",
+    "jest": "jest"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,7 @@
     "ngeohash": "^0.6.3"
   },
   "devDependencies": {
-    "@turf/centroid": "^6.0.2"
+    "@turf/centroid": "^6.0.2",
+    "jest": "^24.8.0"
   }
 }

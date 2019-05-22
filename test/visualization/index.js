@@ -22,23 +22,44 @@ function initMaps() {
       zoom: 9.5,
     })
 
-    const paths = mapData.polygon.map(([lng, lat]) => {
-      return {
-        lat,
-        lng,
-      }
-    })
+    function handlePolygon(coordinates) {
+      let outerPath = coordinates[0]
+      let innerPath = coordinates[1] || []
 
-    // Construct the polygon.
-    const mapPolygon = new google.maps.Polygon({
-      paths,
-      strokeColor: "#FF0000",
-      strokeOpacity: 0.3,
-      strokeWeight: 2,
-      fillColor: "#FF0000",
-      fillOpacity: 0.1,
-    })
-    mapPolygon.setMap(map)
+      outerPath = outerPath.map(([lng, lat]) => {
+        return {
+          lat,
+          lng,
+        }
+      })
+
+      innerPath = innerPath
+        .map(([lng, lat]) => {
+          return {
+            lat,
+            lng,
+          }
+        })
+        .reverse()
+
+      // Construct the polygon.
+      const mapPolygon = new google.maps.Polygon({
+        paths: [outerPath, innerPath],
+        strokeColor: "#FF0000",
+        strokeOpacity: 0.3,
+        strokeWeight: 2,
+        fillColor: "#FF0000",
+        fillOpacity: 0.1,
+      })
+      mapPolygon.setMap(map)
+    }
+
+    // Draw all polygons
+    if (mapData.shape.type === "MultiPolygon") {
+      mapData.shape.coordinates.forEach(handlePolygon)
+    } else {
+      handlePolygon(mapData.shape.coordinates)
+    }
 
     // Draw geohashes
     mapData.geohashes.forEach(gh => {
