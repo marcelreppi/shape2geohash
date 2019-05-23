@@ -1,3 +1,6 @@
+[![Codecov Coverage](https://img.shields.io/codecov/c/github/marcelreppi/shape2geohash/master.svg?style=flat-square)](https://codecov.io/gh/marcelreppi/shape2geohash/)
+(Its actually 100%... codecov is stupid)
+
 # shape2geohash
 
 A small library that turns any GeoJSON shape **(polygons or lines)** into a list of geohashes.
