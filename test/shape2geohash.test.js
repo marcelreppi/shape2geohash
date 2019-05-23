@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 const fs = require("fs")
+const Stream = require("stream")
 const { default: turfCentroid } = require("@turf/centroid")
 const {
   polygon: turfPolygon,
@@ -146,7 +147,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(polygon, geohashes, "Test polygon")
@@ -187,7 +188,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(multiPolygon, geohashes, "Test multi polygon")
@@ -227,7 +228,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(polygon, geohashes, "Test polygon with a hole")
@@ -261,7 +262,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(polygon, geohashes, "Test polygon with hashMode 'border'")
@@ -287,7 +288,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(
@@ -325,7 +326,7 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(
@@ -357,10 +358,53 @@ describe("Manual tests", () => {
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
     })
-
+    expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(line, geohashes, "Test line")
+  })
+
+  test("Test custom writer", async () => {
+    const Stream = require("stream")
+
+    const polygon = [
+      [
+        [13.331187, 52.49439],
+        [13.371699, 52.509027],
+        [13.4245712, 52.50401228],
+        [13.41221166, 52.457175],
+        [13.3414871, 52.4504801],
+        [13.331187, 52.49439],
+      ],
+    ]
+
+    const expectedGeohashes = [
+      ["u336x", "u33d8", "u33d9"],
+      ["u336r", "u33d2", "u33d3"],
+    ]
+
+    let i = 0
+    const myCustomWriter = new Stream.Writable({
+      objectMode: true, // THIS IS IMPORTANT
+      write: (rowGeohashes, enc, callback) => {
+        rowGeohashes.forEach(gh => {
+          expect(expectedGeohashes[i]).toContain(gh)
+        })
+        expect(rowGeohashes.length).toBe(expectedGeohashes[i].length)
+
+        const duplicates = checkForDuplicates(rowGeohashes)
+        expect(duplicates).toBe(null)
+        i++
+
+        callback()
+      },
+    })
+
+    await shape2geohash(polygon, {
+      customWriter: myCustomWriter,
+      precision: expectedGeohashes[0][0].length,
+      // ...other options
+    })
   })
 })
 

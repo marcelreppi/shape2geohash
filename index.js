@@ -235,6 +235,7 @@ class GeohashStream extends Stream.Readable {
 const defaultOptions = {
   precision: 6,
   hashMode: "intersect",
+  customWriter: null,
 }
 
 async function shape2geohash(shapes, options = {}) {
@@ -254,7 +255,11 @@ async function shape2geohash(shapes, options = {}) {
         },
       })
 
-      geohashStream.pipe(writer) // Kick off the stream
+      if (options.customWriter) {
+        geohashStream.pipe(options.customWriter)
+      } else {
+        geohashStream.pipe(writer) // Kick off the stream
+      }
 
       geohashStream.on("end", () => {
         resolve()

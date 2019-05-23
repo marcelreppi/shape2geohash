@@ -43,6 +43,7 @@ Returns a promise that resolves to an array of geohashes that intersect with the
 const defaultOptions = {
   precision: 6,
   hashMode: "intersect",
+  customWriter: null
 }
 ```
 
@@ -52,6 +53,33 @@ const defaultOptions = {
   * `envelope`: Includes all geohashes that are inside the rectangular border of the shape.
   * `insideOnly`: Includes only the geohashes that are fully within the polygon.
   * `border`: Includes only the geohashes that intersect with the border of the polygon.
+* `customWriter`: Custom `Writable` Stream that can used for custom stream processing. See [Custom Stream Processing](#custom-stream-processing) section for more details.
+
+## Custom Stream Processing
+
+This package uses Node.js Streams to process the incoming shape row-wise from top to bottom. You can substitute the internally used `Writable` Stream with your custom `Writable` Stream. This may be useful if you want to process extremely large polygons. 
+
+You need to implement the `write` method to receive the data. The data passed into the `write` method will be all geohashes that are in the current row from top to bottom. 
+
+Since the incoming data is always an array you MUST enable `objectMode`!
+
+```js
+const Stream = require("stream")
+
+const myCustomWriter = new Stream.Writable({
+  objectMode: true, // THIS IS IMPORTANT
+  write: (rowGeohashes, enc, callback) => {
+    // rowGeohashes = ["u336x", ...]
+    // Do some processing with the incoming geohashes per row
+    callback()
+  },
+})
+
+shape2geohash(polygon, { 
+  customWriter: myCustomWriter,
+  // ...other options
+})
+```
 
 ## Testing
 
