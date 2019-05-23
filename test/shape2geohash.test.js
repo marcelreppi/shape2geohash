@@ -1,13 +1,10 @@
 /* eslint-disable no-console */
 const fs = require("fs")
-const path = require("path")
 const { default: turfCentroid } = require("@turf/centroid")
 const {
   polygon: turfPolygon,
-  lineString: turfLine,
   multiPolygon: turfMultiPolygon,
 } = require("@turf/helpers")
-const { default: turfLineToPolygon } = require("@turf/line-to-polygon")
 const ngeohash = require("ngeohash")
 
 const berlin = require("./berlin")
@@ -56,11 +53,6 @@ function bboxToCoordinates(bbox) {
       [bbox[1], bbox[2]],
     ],
   ]
-}
-
-const defaultOptions = {
-  precision: 6,
-  hashMode: "intersect",
 }
 
 function visualizeTestCase(coordinates, geohashes, description) {
@@ -342,12 +334,38 @@ describe("Manual tests", () => {
       "Test polygon with hashMode 'envelope'"
     )
   })
+
+  test("Test line", async () => {
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
+
+    const expectedGeohashes = [
+      "u336w",
+      "u336x",
+      "u336r",
+      "u33d2",
+      "u33d3",
+      "u33d6",
+    ]
+
+    const geohashes = await shape2geohash(line, {
+      precision: expectedGeohashes[0].length,
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(line, geohashes, "Test line")
+  })
 })
 
 afterAll(() => {
-  const dataString = `
-const maps = ${JSON.stringify(maps, null, 2)}
-  `
+  const dataString = `const maps = ${JSON.stringify(maps, null, 2)}`
 
   fs.writeFileSync("./test/visualization/data.js", dataString)
 })

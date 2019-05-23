@@ -25,10 +25,18 @@
     "url": "https://github.com/marcelreppi/shape2geohash/issues"
   },
   "homepage": "https://github.com/marcelreppi/shape2geohash#readme",
+  "jest": {
+    "collectCoverage": true,
+    "coverageDirectory": "./test/jest-coverage-report",
+    "collectCoverageFrom": [
+      "./*.js"
+    ]
+  },
   "dependencies": {
     "@turf/bbox": "^6.0.1",
     "@turf/bbox-polygon": "^6.0.1",
     "@turf/boolean-overlap": "^6.0.1",
+    "@turf/boolean-point-in-polygon": "^6.0.1",
     "@turf/boolean-within": "^6.0.1",
     "@turf/envelope": "^5.1.5",
     "@turf/helpers": "^6.1.4",
@@ -39,6 +47,7 @@
   },
   "devDependencies": {
     "@turf/centroid": "^6.0.2",
+    "@types/jest": "^24.0.13",
     "jest": "^24.8.0"
   }
 }

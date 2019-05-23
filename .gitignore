@@ -61,3 +61,8 @@ typings/
 .next
 
 test/**/data.js
+test/**/debug.js
+
+jest-coverage-report
+
+.vscode
