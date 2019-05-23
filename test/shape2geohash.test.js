@@ -336,7 +336,7 @@ describe("Manual tests", () => {
     )
   })
 
-  test("Test line", async () => {
+  test("Test line with hashMode 'intersect'", async () => {
     const line = [
       [13.286631, 52.501994],
       [13.383104, 52.443386],
@@ -354,6 +354,7 @@ describe("Manual tests", () => {
 
     const geohashes = await shape2geohash(line, {
       precision: expectedGeohashes[0].length,
+      hashMode: "intersect",
     })
     geohashes.forEach(gh => {
       expect(expectedGeohashes).toContain(gh)
@@ -361,7 +362,98 @@ describe("Manual tests", () => {
     expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase(line, geohashes, "Test line")
+    visualizeTestCase(line, geohashes, "Test line with hashMode 'intersect'")
+  })
+
+  test("Test line with hashMode 'border'", async () => {
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
+
+    const expectedGeohashes = [
+      "u336w",
+      "u336x",
+      "u336r",
+      "u33d2",
+      "u33d3",
+      "u33d6",
+    ]
+
+    const geohashes = await shape2geohash(line, {
+      precision: expectedGeohashes[0].length,
+      hashMode: "border",
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+    expect(geohashes.length).toBe(expectedGeohashes.length)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(line, geohashes, "Test line with hashMode 'border'")
+  })
+
+  test("Test line with hashMode 'insideOnly'", async () => {
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
+
+    const expectedGeohashes = [
+      "u336w",
+      "u336x",
+      "u336r",
+      "u33d2",
+      "u33d3",
+      "u33d6",
+    ]
+
+    const geohashes = await shape2geohash(line, {
+      precision: expectedGeohashes[0].length,
+      hashMode: "insideOnly",
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+    expect(geohashes.length).toBe(expectedGeohashes.length)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(line, geohashes, "Test line with hashMode 'insideOnly'")
+  })
+
+  test("Test line with hashMode 'envelope'", async () => {
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
+
+    const expectedGeohashes = [
+      "u336w",
+      "u336x",
+      "u33d8",
+      "u33d9",
+      "u33dd",
+      "u336q",
+      "u336r",
+      "u33d2",
+      "u33d3",
+      "u33d6",
+    ]
+
+    const geohashes = await shape2geohash(line, {
+      precision: expectedGeohashes[0].length,
+      hashMode: "envelope",
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+    expect(geohashes.length).toBe(expectedGeohashes.length)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(line, geohashes, "Test line with hashMode 'envelope'")
   })
 
   test("Test custom writer", async () => {
@@ -405,6 +497,70 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0][0].length,
       // ...other options
     })
+  })
+
+  test("Test minIntersect 0.5", async () => {
+    const polygon = [
+      [
+        [13.331187, 52.49439],
+        [13.371699, 52.509027],
+        [13.4245712, 52.50401228],
+        [13.41221166, 52.457175],
+        [13.3414871, 52.4504801],
+        [13.331187, 52.49439],
+      ],
+    ]
+    const expectedGeohashes = [
+      // "u336x",
+      "u33d8",
+      // "u33d9",
+      // "u336r",
+      // "u33d2",
+      // "u33d3",
+    ]
+    const geohashes = await shape2geohash(polygon, {
+      precision: expectedGeohashes[0].length,
+      minIntersect: 0.5,
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+    expect(geohashes.length).toBe(expectedGeohashes.length)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(polygon, geohashes, "Test minIntersect 0.5")
+  })
+
+  test("Test minIntersect 0.25", async () => {
+    const polygon = [
+      [
+        [13.331187, 52.49439],
+        [13.371699, 52.509027],
+        [13.4245712, 52.50401228],
+        [13.41221166, 52.457175],
+        [13.3414871, 52.4504801],
+        [13.331187, 52.49439],
+      ],
+    ]
+    const expectedGeohashes = [
+      "u336x",
+      "u33d8",
+      "u33d9",
+      // "u336r",
+      "u33d2",
+      // "u33d3",
+    ]
+    const geohashes = await shape2geohash(polygon, {
+      precision: expectedGeohashes[0].length,
+      minIntersect: 0.25,
+    })
+    geohashes.forEach(gh => {
+      expect(expectedGeohashes).toContain(gh)
+    })
+    expect(geohashes.length).toBe(expectedGeohashes.length)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+    visualizeTestCase(polygon, geohashes, "Test minIntersect 0.25")
   })
 })
 

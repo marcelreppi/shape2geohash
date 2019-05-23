@@ -9,6 +9,7 @@ const {
   default: turfBooleanPointInPolygon,
 } = require("@turf/boolean-point-in-polygon")
 const { default: turfLineSplit } = require("@turf/line-split")
+const { default: turfArea } = require("@turf/area")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
 
@@ -78,6 +79,10 @@ class GeohashStream extends Stream.Readable {
 
     // Bottom border of the extended geohash envelope
     this.bottomLimit = geohashEnvelopeBbox[1]
+
+    // The minimum shared area between the polygon and the geohash
+    this.minIntersectArea =
+      this.options.minIntersect * turfArea(turfBboxPolygon(topLeftGeohashBbox))
 
     // Used in processRowSegment to keep track of how much area of the row
     // has been covered by the matching geohashes
@@ -176,24 +181,33 @@ class GeohashStream extends Stream.Readable {
       )
 
       let addGeohash = false
-      switch (this.options.hashMode) {
-        case "intersect":
-          // Only add geohash if they intersect with the original polygon
-          addGeohash = turfBooleanOverlap(segmentPolygon, geohashPolygon)
-          break
-        case "envelope":
-          addGeohash = true // add every geohash
-          break
-        case "insideOnly":
-          // Only add geohash if it is completely within the original polygon
-          addGeohash = turfBooleanWithin(geohashPolygon, this.originalShape)
-          break
-        case "border":
-          // Only add geohash if they overlap
-          addGeohash =
-            turfBooleanOverlap(segmentPolygon, geohashPolygon) &&
-            !turfBooleanWithin(geohashPolygon, this.originalShape)
-          break
+
+      if (this.originalShape.geometry.type === "LineString") {
+        // We add every geohash because all segments that come in are envelopes of the relevant line segments
+        addGeohash = true
+      } else {
+        // Its a polygon
+        switch (this.options.hashMode) {
+          case "intersect":
+            // Only add geohash if they intersect with the original polygon
+            const overlap = turfBooleanOverlap(segmentPolygon, geohashPolygon)
+            const intersect = turfIntersect(this.originalShape, geohashPolygon)
+            addGeohash = overlap && turfArea(intersect) >= this.minIntersectArea
+            break
+          case "envelope":
+            addGeohash = true // add every geohash
+            break
+          case "insideOnly":
+            // Only add geohash if it is completely within the original polygon
+            addGeohash = turfBooleanWithin(geohashPolygon, this.originalShape)
+            break
+          case "border":
+            // Only add geohash if they overlap
+            addGeohash =
+              turfBooleanOverlap(segmentPolygon, geohashPolygon) &&
+              !turfBooleanWithin(geohashPolygon, this.originalShape)
+            break
+        }
       }
 
       // Check if geohash polygon overlaps/intersects with original polygon
@@ -235,6 +249,7 @@ class GeohashStream extends Stream.Readable {
 const defaultOptions = {
   precision: 6,
   hashMode: "intersect",
+  minIntersect: 0,
   customWriter: null,
 }
 

@@ -43,6 +43,7 @@ Returns a promise that resolves to an array of geohashes that intersect with the
 const defaultOptions = {
   precision: 6,
   hashMode: "intersect",
+  minIntersect: 0,
   customWriter: null
 }
 ```
@@ -53,6 +54,7 @@ const defaultOptions = {
   * `envelope`: Includes all geohashes that are inside the rectangular border of the shape.
   * `insideOnly`: Includes only the geohashes that are fully within the polygon.
   * `border`: Includes only the geohashes that intersect with the border of the polygon.
+* `minIntersect`: Percentage value between `0` and `1`. Defines the minimum area of a geohash that needs to be covered by the polygon to be included in the geohash list. This is only relevant for the edge of the polygon when using the hashMode `intersect`.
 * `customWriter`: Custom `Writable` Stream that can used for custom stream processing. See [Custom Stream Processing](#custom-stream-processing) section for more details.
 
 ## Custom Stream Processing
