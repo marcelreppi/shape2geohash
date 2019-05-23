@@ -11,6 +11,7 @@ function initMaps() {
     mapElement.className = "map"
 
     const descElement = document.createElement("div")
+    descElement.className = "description"
     descElement.textContent = mapData.description
 
     mapContainer.appendChild(mapElement)

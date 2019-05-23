@@ -10,20 +10,25 @@ h1 {
 }
 
 .maps-container {
-  margin: 40px auto;
+  margin: 0px auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .single-map-container {
-  height: 500px;
-  width: 500px;
   margin: 50px;
+  border: 2px cornflowerblue solid;
 }
 
 .map {
   height: 500px;
   width: 500px;
-  margin-bottom: 20px;
+}
+
+.description {
+  padding-top: 20px;
+  padding-bottom: 10px;
+  text-align: center;
+  font-size: 20px;
 }
