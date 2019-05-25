@@ -5,9 +5,7 @@ const { default: turfEnvelope } = require("@turf/envelope")
 const { default: turfIntersect } = require("@turf/intersect")
 const { default: turfBooleanOverlap } = require("@turf/boolean-overlap")
 const { default: turfBooleanWithin } = require("@turf/boolean-within")
-const {
-  default: turfBooleanPointInPolygon,
-} = require("@turf/boolean-point-in-polygon")
+const { default: turfBooleanPointInPolygon } = require("@turf/boolean-point-in-polygon")
 const { default: turfLineSplit } = require("@turf/line-split")
 const { default: turfArea } = require("@turf/area")
 const ngeohash = require("ngeohash")
@@ -26,6 +24,22 @@ function isLine(coordinates) {
   return !Array.isArray(coordinates[0][0])
 }
 
+function allRectangleEdgesWithin(polygon1, polygon2) {
+  const bbox = turfBbox(polygon1)
+  const edge = turfLine([
+    [bbox[0], bbox[3]], // Top edge
+    [bbox[2], bbox[3]], // Top edge
+    [bbox[2], bbox[3]], // Right edge
+    [bbox[2], bbox[1]], // Right edge
+    [bbox[2], bbox[1]], // Bottom edge
+    [bbox[0], bbox[1]], // Bottom edge
+    [bbox[0], bbox[1]], // Left edge
+    [bbox[0], bbox[3]], // Left edge
+  ])
+  // Make sure the polygon does not split the line into separate segments
+  return turfLineSplit(edge, polygon2).features.length === 0
+}
+
 class GeohashStream extends Stream.Readable {
   constructor(shapeCoordinates, options) {
     super({ objectMode: true })
@@ -42,22 +56,14 @@ class GeohashStream extends Stream.Readable {
     // [minX, minY, maxX, maxY]
     const topLeftGeohashBbox = switchBbox(
       ngeohash.decode_bbox(
-        ngeohash.encode(
-          originalEnvelopeBbox[3],
-          originalEnvelopeBbox[0],
-          this.options.precision
-        )
+        ngeohash.encode(originalEnvelopeBbox[3], originalEnvelopeBbox[0], this.options.precision)
       )
     )
 
     // [minX, minY, maxX, maxY]
     const bottomRightGeohashBbox = switchBbox(
       ngeohash.decode_bbox(
-        ngeohash.encode(
-          originalEnvelopeBbox[1],
-          originalEnvelopeBbox[2],
-          this.options.precision
-        )
+        ngeohash.encode(originalEnvelopeBbox[1], originalEnvelopeBbox[2], this.options.precision)
       )
     )
 
@@ -110,8 +116,7 @@ class GeohashStream extends Stream.Readable {
       geohashes.push(...this.processRowSegment(rowPolygon.geometry.coordinates))
     } else {
       if (this.originalShape.geometry.type === "LineString") {
-        const lineSegments = turfLineSplit(this.originalShape, rowPolygon)
-          .features
+        const lineSegments = turfLineSplit(this.originalShape, rowPolygon).features
 
         let evenPairs
         const firstPointOfFirstSegment = lineSegments[0].geometry.coordinates[0]
@@ -125,17 +130,13 @@ class GeohashStream extends Stream.Readable {
         lineSegments
           .filter((p, i) => (evenPairs ? i % 2 == 0 : i % 2 == 1))
           .forEach(lineSegment => {
-            const lineSegmentEnvelope = turfEnvelope(lineSegment).geometry
-              .coordinates
+            const lineSegmentEnvelope = turfEnvelope(lineSegment).geometry.coordinates
             geohashes.push(...this.processRowSegment(lineSegmentEnvelope))
           })
       } else {
         // Its a Polygon
         // Calculate the intersection between the row and the original polygon
-        const intersectionGeoJSON = turfIntersect(
-          this.originalShape,
-          rowPolygon
-        )
+        const intersectionGeoJSON = turfIntersect(this.originalShape, rowPolygon)
         if (intersectionGeoJSON !== null) {
           let coordinates = intersectionGeoJSON.geometry.coordinates
           coordinates = isMulti(coordinates) ? coordinates : [coordinates]
@@ -176,9 +177,7 @@ class GeohashStream extends Stream.Readable {
     let currentGeohash = startingGeohash
 
     while (true) {
-      const geohashPolygon = turfBboxPolygon(
-        switchBbox(ngeohash.decode_bbox(currentGeohash))
-      )
+      const geohashPolygon = turfBboxPolygon(switchBbox(ngeohash.decode_bbox(currentGeohash)))
 
       let addGeohash = false
 
@@ -189,17 +188,24 @@ class GeohashStream extends Stream.Readable {
         // Its a polygon
         switch (this.options.hashMode) {
           case "intersect":
-            // Only add geohash if they intersect with the original polygon
-            const overlap = turfBooleanOverlap(segmentPolygon, geohashPolygon)
-            const intersect = turfIntersect(this.originalShape, geohashPolygon)
-            addGeohash = overlap && turfArea(intersect) >= this.minIntersectArea
+            // Only add geohash if they intersect/overlap with the original polygon
+            addGeohash = turfBooleanOverlap(segmentPolygon, geohashPolygon)
+
+            if (addGeohash && this.minIntersectArea > 0) {
+              const intersect = turfIntersect(this.originalShape, geohashPolygon)
+              addGeohash = turfArea(intersect) >= this.minIntersectArea
+            }
             break
           case "envelope":
             addGeohash = true // add every geohash
             break
           case "insideOnly":
             // Only add geohash if it is completely within the original polygon
-            addGeohash = turfBooleanWithin(geohashPolygon, this.originalShape)
+            addGeohash =
+              turfBooleanWithin(geohashPolygon, this.originalShape) &&
+              allRectangleEdgesWithin(geohashPolygon, this.originalShape)
+            // Extra check to avoid turf.js bug
+            // REMOVE allRectangleEdgesWithin CHECK IF POSSIBLE -> NEGATIVE PERFORMANCE IMPACT
             break
           case "border":
             // Only add geohash if they overlap
