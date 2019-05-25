@@ -1,5 +1,6 @@
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/marcelreppi/shape2geohash/master.svg?style=flat-square)](https://codecov.io/gh/marcelreppi/shape2geohash/)
 (Its actually 100%... codecov is stupid)
+[![npm version](https://badge.fury.io/js/shape2geohash.svg)](https://badge.fury.io/js/shape2geohash)
 
 # shape2geohash
 

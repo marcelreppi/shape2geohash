@@ -29,7 +29,7 @@
     "collectCoverage": true,
     "coverageDirectory": "./test/jest-coverage-report",
     "collectCoverageFrom": [
-      "./*.js"
+      "./index.js"
     ]
   },
   "dependencies": {
