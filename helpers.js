@@ -15,6 +15,10 @@ function isLine(coordinates) {
   return !Array.isArray(coordinates[0][0])
 }
 
+function isPoint(coordinates) {
+  return !Array.isArray(coordinates[0])
+}
+
 function allRectangleEdgesWithin(polygon1, polygon2) {
   const bbox = turfBbox(polygon1)
   const edge = turfLine([
@@ -38,7 +42,14 @@ function extractCoordinatesFromGeoJSON(geoJSON) {
     throw new Error("GeoJSON Error: GeoJSON object is missing type property")
   }
 
-  const checkForCoordinates = ["Polygon", "MultiPolygon", "LineString", "MultiLineString"]
+  const checkForCoordinates = [
+    "Polygon",
+    "MultiPolygon",
+    "LineString",
+    "MultiLineString",
+    "Point",
+    "MultiPoint",
+  ]
   if (checkForCoordinates.includes(geoJSON.type)) {
     if (!geoJSON.hasOwnProperty("coordinates")) {
       throw new Error(`GeoJSON Error: ${geoJSON.type} is missing "coordinates" property`)
@@ -76,6 +87,12 @@ function extractCoordinatesFromGeoJSON(geoJSON) {
     case "MultiLineString":
       result.push(...geoJSON.coordinates)
       break
+    case "Point":
+      result.push(geoJSON.coordinates)
+      break
+    case "MultiPoint":
+      result.push(...geoJSON.coordinates)
+      break
   }
 
   return result
@@ -83,6 +100,7 @@ function extractCoordinatesFromGeoJSON(geoJSON) {
 
 module.exports = {
   switchBbox,
+  isPoint,
   isLine,
   isMulti,
   allRectangleEdgesWithin,

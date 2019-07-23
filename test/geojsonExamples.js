@@ -232,3 +232,13 @@ exports.MultiLineString = {
     [[14.007568359374998, 52.60805152239317], [13.79058837890625, 52.49950372242746]],
   ],
 }
+
+exports.Point = {
+  type: "Point",
+  coordinates: [52.5125, 13.32165],
+}
+
+exports.MultiPoint = {
+  type: "MultiPoint",
+  coordinates: [[52.5125, 13.32165], [52.50716, 13.3243]],
+}

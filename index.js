@@ -1,4 +1,4 @@
-const { polygon: turfPolygon, lineString: turfLine } = require("@turf/helpers")
+const { polygon: turfPolygon, lineString: turfLine, point: turfPoint } = require("@turf/helpers")
 const { default: turfBboxPolygon } = require("@turf/bbox-polygon")
 const { default: turfBbox } = require("@turf/bbox")
 const { default: turfEnvelope } = require("@turf/envelope")
@@ -12,6 +12,7 @@ const ngeohash = require("ngeohash")
 const Stream = require("stream")
 
 const {
+  isPoint,
   isLine,
   isMulti,
   switchBbox,
@@ -72,9 +73,14 @@ class GeohashStream extends Stream.Readable {
 
     this.options = options
 
-    this.originalShape = isLine(shapeCoordinates)
-      ? turfLine(shapeCoordinates)
-      : turfPolygon(shapeCoordinates)
+    this.originalShape = null
+    if (isPoint(shapeCoordinates)) {
+      this.originalShape = turfPoint(shapeCoordinates)
+    } else if (isLine(shapeCoordinates)) {
+      this.originalShape = turfLine(shapeCoordinates)
+    } else {
+      this.originalShape = turfPolygon(shapeCoordinates)
+    }
 
     // [minX, minY, maxX, maxY]
     const originalEnvelopeBbox = turfBbox(turfEnvelope(this.originalShape))
@@ -150,7 +156,11 @@ class GeohashStream extends Stream.Readable {
     if (this.options.hashMode === "envelope") {
       geohashes.push(...this.processRowSegment(rowPolygon.geometry.coordinates))
     } else {
-      if (this.originalShape.geometry.type === "LineString") {
+      if (this.originalShape.geometry.type === "Point") {
+        geohashes.push(
+          ngeohash.encode(...this.originalShape.geometry.coordinates, this.options.precision)
+        )
+      } else if (this.originalShape.geometry.type === "LineString") {
         const lineSegments = turfLineSplit(this.originalShape, rowPolygon).features
 
         let evenPairs

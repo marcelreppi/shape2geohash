@@ -182,48 +182,32 @@ describe("Test GeoJSON parsing", () => {
 
     expect(geohashesA.length).toBe(geohashesB.length)
   })
-})
 
-describe("Test GeoJSON parsing errors", () => {
-  test("Missing type", async () => {
-    const { Polygon } = geojsonExamples
-    delete Polygon.type
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  test("Type: Point", async () => {
+    const { Point } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(Point)
+    const b = Point.coordinates
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    // const geohashesA = await shape2geohash(Point, { isGeoJSON: true })
+    // const geohashesB = await shape2geohash(b)
+
+    // expect(geohashesA.length).toBe(geohashesB.length)
   })
 
-  test("Missing coordinates (1)", async () => {
-    const { Polygon } = geojsonExamples
-    delete Polygon.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
-  })
+  test("Type: MultiPoint", async () => {
+    const { MultiPoint } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(MultiPoint)
+    const b = MultiPoint.coordinates
 
-  test("Missing coordinates (2)", async () => {
-    const { MultiPolygon1 } = geojsonExamples
-    delete MultiPolygon1.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)).toThrowError()
-  })
+    expect(a.length).toBe(b.length)
 
-  test("Missing coordinates (3)", async () => {
-    const { LineString } = geojsonExamples
-    delete LineString.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(LineString)).toThrowError()
-  })
+    // const geohashesA = await shape2geohash(MultiPoint, { isGeoJSON: true })
+    // const geohashesB = await shape2geohash(b)
 
-  test("Missing coordinates (4)", async () => {
-    const { MultiLineString } = geojsonExamples
-    delete MultiLineString.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiLineString)).toThrowError()
-  })
-
-  test("Missing geometry", async () => {
-    const { Feature1 } = geojsonExamples
-    delete Feature1.geometry
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature1)).toThrowError()
-  })
-
-  test("Non-Multi MultiPolygon", async () => {
-    const { wrongMultiPolygon } = geojsonExamples
-    expect(() => helpers.extractCoordinatesFromGeoJSON(wrongMultiPolygon)).toThrowError()
+    // expect(geohashesA.length).toBe(geohashesB.length)
   })
 })
 
@@ -305,6 +289,27 @@ describe("Berlin tests", () => {
 })
 
 describe("Manual tests", () => {
+  test("Test point", async () => {
+    const testGeohash = "u336xps"
+    const geohashes = await shape2geohash(geojsonExamples.Point, {
+      precision: testGeohash.length,
+      isGeoJSON: true,
+    })
+    expect(geohashes.length).toBe(1)
+    expect(geohashes[0]).toBe(testGeohash)
+  })
+
+  test("Test multi point", async () => {
+    const testGeohashes = ["u336xps", "u336xnw"]
+    const geohashes = await shape2geohash(geojsonExamples.MultiPoint, {
+      precision: testGeohashes[0].length,
+      isGeoJSON: true,
+    })
+    expect(geohashes.length).toBe(2)
+    expect(geohashes[0]).toBe(testGeohashes[0])
+    expect(geohashes[1]).toBe(testGeohashes[1])
+  })
+
   test("Test exact geohash", async () => {
     const testGeohash = "u336x"
     const bbox = ngeohash.decode_bbox(testGeohash)
@@ -698,6 +703,61 @@ describe("Manual tests", () => {
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
     visualizeTestCase(polygon, geohashes, "Test minIntersect 0.25")
+  })
+})
+
+describe("Test GeoJSON parsing errors", () => {
+  test("Missing type", async () => {
+    const { Polygon } = geojsonExamples
+    delete Polygon.type
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  })
+
+  test("Missing coordinates (1)", async () => {
+    const { Polygon } = geojsonExamples
+    delete Polygon.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  })
+
+  test("Missing coordinates (2)", async () => {
+    const { MultiPolygon1 } = geojsonExamples
+    delete MultiPolygon1.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)).toThrowError()
+  })
+
+  test("Missing coordinates (3)", async () => {
+    const { LineString } = geojsonExamples
+    delete LineString.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(LineString)).toThrowError()
+  })
+
+  test("Missing coordinates (4)", async () => {
+    const { MultiLineString } = geojsonExamples
+    delete MultiLineString.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiLineString)).toThrowError()
+  })
+
+  test("Missing coordinates (5)", async () => {
+    const { Point } = geojsonExamples
+    delete Point.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Point)).toThrowError()
+  })
+
+  test("Missing coordinates (6)", async () => {
+    const { MultiPoint } = geojsonExamples
+    delete MultiPoint.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPoint)).toThrowError()
+  })
+
+  test("Missing geometry", async () => {
+    const { Feature1 } = geojsonExamples
+    delete Feature1.geometry
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature1)).toThrowError()
+  })
+
+  test("Non-Multi MultiPolygon", async () => {
+    const { wrongMultiPolygon } = geojsonExamples
+    expect(() => helpers.extractCoordinatesFromGeoJSON(wrongMultiPolygon)).toThrowError()
   })
 })
 
