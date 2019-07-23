@@ -4,7 +4,7 @@
 
 # shape2geohash
 
-A small library that turns any GeoJSON shape **(polygons or lines)** into a list of geohashes.
+A small library that turns **any GeoJSON shape** into a list of geohashes.
 
 
 ## Installation
@@ -18,7 +18,25 @@ npm install shape2geohash
 ```js
 const shape2geohash = require("shape2geohash")
 
-const geohashes = await shape2geohash([
+// Providing polygon as GeoJSON
+const geohashes1 = await shape2geohash({
+  type: "Polygon",
+  coordinates: [
+    [
+      [13.0, 52.5], //[long, lat]
+      [13.3, 52.5],
+      [13.3, 52.2],
+      [13.0, 52.2],
+      [13.0, 52.5], // make sure the last coordinate is equal to the first one
+    ]
+  ]
+})
+
+// returns ["u336xp", etc.]
+
+
+// Providing polygon as an array of coordinates
+const geohashes2 = await shape2geohash([
   [
     [13.0, 52.5], //[long, lat]
     [13.3, 52.5],
@@ -26,18 +44,25 @@ const geohashes = await shape2geohash([
     [13.0, 52.2],
     [13.0, 52.5], // make sure the last coordinate is equal to the first one
   ]
-])
+], { isGeoJSON: false })
 
-// returns ["u336s", etc.]
+// returns ["u336xp", etc.]
 ```
 
 ### shape2geohash(geoJSON, options)
 
 * `geoJSON` can be any of these things:
-  * A single polygon in GeoJSON format
-  * An array of polygons in GeoJSON format
-  * A line in GeoJSON format
-  * An array of lines in GeoJSON format
+  * Any GeoJSON object of the following type:
+    * `FeatureCollection`
+    * `Feature`
+    * `Polygon`
+    * `MultiPolygon`
+    * `LineString`
+    * `MultiLineString`
+    * `Point`
+    * `MultiPoint`
+  * A single polygon as a simple array of coordinates
+  * An array of polygons
 
 Returns a promise that resolves to an array of geohashes that intersect with the given shape(s)
 
@@ -72,11 +97,13 @@ Since the incoming data is always an array you MUST enable `objectMode`!
 ```js
 const Stream = require("stream")
 
+const myGeohashes = []
 const myCustomWriter = new Stream.Writable({
   objectMode: true, // THIS IS IMPORTANT
   write: (rowGeohashes, enc, callback) => {
-    // rowGeohashes = ["u336x", ...]
+    // rowGeohashes = ["u336xp", ...]
     // Do some processing with the incoming geohashes per row
+    myGeohashes.push(...rowGeohashes)
     callback()
   },
 })
