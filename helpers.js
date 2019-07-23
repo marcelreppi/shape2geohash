@@ -2,7 +2,7 @@ const { default: turfBbox } = require("@turf/bbox")
 const { lineString: turfLine } = require("@turf/helpers")
 const { default: turfLineSplit } = require("@turf/line-split")
 
-exports.switchBbox = function(bbox) {
+function switchBbox(bbox) {
   const [y1, x1, y2, x2] = bbox
   return [x1, y1, x2, y2]
 }
@@ -11,13 +11,11 @@ function isMulti(coordinates) {
   return Array.isArray(coordinates[0][0][0])
 }
 
-exports.isMulti = isMulti
-
-exports.isLine = function(coordinates) {
+function isLine(coordinates) {
   return !Array.isArray(coordinates[0][0])
 }
 
-exports.allRectangleEdgesWithin = function(polygon1, polygon2) {
+function allRectangleEdgesWithin(polygon1, polygon2) {
   const bbox = turfBbox(polygon1)
   const edge = turfLine([
     [bbox[0], bbox[3]], // Top edge
@@ -33,62 +31,60 @@ exports.allRectangleEdgesWithin = function(polygon1, polygon2) {
   return turfLineSplit(edge, polygon2).features.length === 0
 }
 
-exports.extractCoordinatesFromGeoJSON = function(geoJSON) {
+function extractCoordinatesFromGeoJSON(geoJSON) {
   let result = []
 
   if (!geoJSON.hasOwnProperty("type")) {
     throw new Error("GeoJSON Error: GeoJSON object is missing type property")
   }
 
+  const checkForCoordinates = ["Polygon", "MultiPolygon", "LineString", "MultiLineString"]
+  if (checkForCoordinates.includes(geoJSON.type)) {
+    if (!geoJSON.hasOwnProperty("coordinates")) {
+      throw new Error(`GeoJSON Error: ${geoJSON.type} is missing "coordinates" property`)
+    }
+  }
+
   switch (geoJSON.type) {
     case "FeatureCollection":
       geoJSON.features.forEach(f => {
-        if (!f.hasOwnProperty("geometry")) {
-          throw new Error("GeoJSON Error: Feature is missing geometry property")
-        }
-
-        const coordinates = this.extractCoordinatesFromGeoJSON(f.geometry)
-        result = result.concat(...coordinates)
+        const coordinates = extractCoordinatesFromGeoJSON(f)
+        result.push(...coordinates)
       })
       break
     case "Feature":
-      if (!geoJSON.hasOwnProperty("type")) {
+      if (!geoJSON.hasOwnProperty("geometry")) {
         throw new Error("GeoJSON Error: Feature is missing geometry property")
       }
 
-      const coordinates = this.extractCoordinatesFromGeoJSON(geoJSON.geometry)
-      coordinates.forEach(x => result.push(x))
+      const coordinates = extractCoordinatesFromGeoJSON(geoJSON.geometry)
+      result.push(...coordinates)
       break
     case "Polygon":
-      if (!geoJSON.hasOwnProperty("coordinates")) {
-        throw new Error("GeoJSON Error: Polygon is missing coordinates property")
-      }
       result.push(geoJSON.coordinates)
       break
     case "MultiPolygon":
-      if (!geoJSON.hasOwnProperty("coordinates")) {
-        throw new Error("GeoJSON Error: MultiPolygon is missing coordinates property")
-      }
-
       if (!isMulti(geoJSON.coordinates)) {
         throw new Error("GeoJSON Error: MultiPolygon is actually not a MultiPolygon")
       }
 
-      geoJSON.coordinates.forEach(p => result.push(p))
+      result.push(...geoJSON.coordinates)
       break
     case "LineString":
-      if (!geoJSON.hasOwnProperty("coordinates")) {
-        throw new Error("GeoJSON Error: LineString is missing coordinates property")
-      }
       result.push(geoJSON.coordinates)
       break
     case "MultiLineString":
-      if (!geoJSON.hasOwnProperty("coordinates")) {
-        throw new Error("GeoJSON Error: MultiLineString is missing coordinates property")
-      }
-      geoJSON.coordinates.forEach(l => result.push(l))
+      result.push(...geoJSON.coordinates)
       break
   }
 
   return result
+}
+
+module.exports = {
+  switchBbox,
+  isLine,
+  isMulti,
+  allRectangleEdgesWithin,
+  extractCoordinatesFromGeoJSON,
 }

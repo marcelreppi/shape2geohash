@@ -4,7 +4,8 @@
   "description": "Turns any GeoJSON shape into a list of geohashes",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest --watch",
+    "testCoverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -29,7 +30,8 @@
     "collectCoverage": true,
     "coverageDirectory": "./test/jest-coverage-report",
     "collectCoverageFrom": [
-      "./index.js"
+      "./index.js",
+      "./helpers.js"
     ]
   },
   "dependencies": {

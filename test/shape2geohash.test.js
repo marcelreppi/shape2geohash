@@ -73,31 +73,157 @@ function visualizeTestCase(coordinates, geohashes, description) {
   })
 }
 
-describe.only("Test GeoJSON parsing", () => {
-  test("Type: Polygon", async () => {
-    const a = helpers.extractCoordinatesFromGeoJSON(berlin.fields.geo_shape)
-    const b = berlinPolygon
+describe("Test GeoJSON parsing", () => {
+  test("Type: FeatureCollection", async () => {
+    const { FeatureCollection1 } = geojsonExamples
 
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
+    const geohashesA = await shape2geohash(FeatureCollection1, { isGeoJSON: true })
 
-    const geohashesA = await shape2geohash(berlin.fields.geo_shape, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(berlinPolygon)
+    const geohashesB = []
+    for (let feature of FeatureCollection1.features) {
+      const gh = await shape2geohash(feature.geometry.coordinates)
+      geohashesB.push(...gh)
+    }
 
     expect(geohashesA.length).toBe(geohashesB.length)
   })
 
-  test("Type: MultiPolygon", async () => {
-    const { MultiPolygon } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon)
-    const b = MultiPolygon.coordinates
+  test("Type: Feature (1)", async () => {
+    const { Feature1 } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(Feature1)
+    const b = Feature1.geometry.coordinates
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    const geohashesA = await shape2geohash(Feature1, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(b)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: Feature (2)", async () => {
+    const { Feature1: Feature2 } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(Feature2)
+    const b = Feature2.geometry.coordinates
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    const geohashesA = await shape2geohash(Feature2, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(b)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: Polygon", async () => {
+    const { Polygon } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(Polygon)
+    const b = Polygon.coordinates
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    const geohashesA = await shape2geohash(Polygon, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(b)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: MultiPolygon (1)", async () => {
+    const { MultiPolygon1 } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)
+    const b = MultiPolygon1.coordinates
 
     expect(a.length).toBe(b.length)
 
-    const geohashesA = await shape2geohash(MultiPolygon, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(MultiPolygon.coordinates)
+    const geohashesA = await shape2geohash(MultiPolygon1, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(MultiPolygon1.coordinates)
 
     expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: MultiPolygon (2)", async () => {
+    const { MultiPolygon2 } = geojsonExamples
+
+    const geohashesA = await shape2geohash(MultiPolygon2, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(MultiPolygon2.coordinates)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: LineString", async () => {
+    const { LineString } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(LineString)
+    const b = LineString.coordinates
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    const geohashesA = await shape2geohash(LineString, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(b)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: MultiLineString", async () => {
+    const { MultiLineString } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(MultiLineString)
+    const b = MultiLineString.coordinates
+
+    expect(a.length).toBe(b.length)
+
+    const geohashesA = await shape2geohash(MultiLineString, { isGeoJSON: true })
+    const geohashesB = []
+    for (let line of MultiLineString.coordinates) {
+      const gh = await shape2geohash(line)
+      geohashesB.push(...gh)
+    }
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+})
+
+describe("Test GeoJSON parsing errors", () => {
+  test("Missing type", async () => {
+    const { Polygon } = geojsonExamples
+    delete Polygon.type
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  })
+
+  test("Missing coordinates (1)", async () => {
+    const { Polygon } = geojsonExamples
+    delete Polygon.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  })
+
+  test("Missing coordinates (2)", async () => {
+    const { MultiPolygon1 } = geojsonExamples
+    delete MultiPolygon1.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)).toThrowError()
+  })
+
+  test("Missing coordinates (3)", async () => {
+    const { LineString } = geojsonExamples
+    delete LineString.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(LineString)).toThrowError()
+  })
+
+  test("Missing coordinates (4)", async () => {
+    const { MultiLineString } = geojsonExamples
+    delete MultiLineString.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiLineString)).toThrowError()
+  })
+
+  test("Missing geometry", async () => {
+    const { Feature1 } = geojsonExamples
+    delete Feature1.geometry
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature1)).toThrowError()
+  })
+
+  test("Non-Multi MultiPolygon", async () => {
+    const { wrongMultiPolygon } = geojsonExamples
+    expect(() => helpers.extractCoordinatesFromGeoJSON(wrongMultiPolygon)).toThrowError()
   })
 })
 
@@ -473,8 +599,6 @@ describe("Manual tests", () => {
   })
 
   test("Test custom writer", async () => {
-    const Stream = require("stream")
-
     const polygon = [
       [
         [13.331187, 52.49439],
