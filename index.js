@@ -11,33 +11,59 @@ const { default: turfArea } = require("@turf/area")
 const ngeohash = require("ngeohash")
 const Stream = require("stream")
 
-function switchBbox(bbox) {
-  const [y1, x1, y2, x2] = bbox
-  return [x1, y1, x2, y2]
+const {
+  isLine,
+  isMulti,
+  switchBbox,
+  allRectangleEdgesWithin,
+  extractCoordinatesFromGeoJSON,
+} = require("./helpers")
+
+const defaultOptions = {
+  precision: 6,
+  hashMode: "intersect",
+  minIntersect: 0,
+  customWriter: null,
+  isGeoJSON: false,
 }
 
-function isMulti(coordinates) {
-  return Array.isArray(coordinates[0][0][0])
-}
+async function shape2geohash(shapes, options = {}) {
+  options = { ...defaultOptions, ...options } // overwrite default options
 
-function isLine(coordinates) {
-  return !Array.isArray(coordinates[0][0])
-}
+  let allShapes = null
+  if (options.isGeoJSON) {
+    allShapes = extractCoordinatesFromGeoJSON(shapes)
+  } else {
+    allShapes = isMulti(shapes) ? shapes : [shapes] // make sure allShapes is always an array of shapes
+  }
 
-function allRectangleEdgesWithin(polygon1, polygon2) {
-  const bbox = turfBbox(polygon1)
-  const edge = turfLine([
-    [bbox[0], bbox[3]], // Top edge
-    [bbox[2], bbox[3]], // Top edge
-    [bbox[2], bbox[3]], // Right edge
-    [bbox[2], bbox[1]], // Right edge
-    [bbox[2], bbox[1]], // Bottom edge
-    [bbox[0], bbox[1]], // Bottom edge
-    [bbox[0], bbox[1]], // Left edge
-    [bbox[0], bbox[3]], // Left edge
-  ])
-  // Make sure the polygon does not split the line into separate segments
-  return turfLineSplit(edge, polygon2).features.length === 0
+  const allGeohashes = []
+
+  const allShapePromises = allShapes.map(shape => {
+    return new Promise((resolve, reject) => {
+      const geohashStream = new GeohashStream(shape, options)
+
+      const writer = new Stream.Writable({
+        objectMode: true,
+        write: (rowGeohashes, enc, callback) => {
+          allGeohashes.push(...rowGeohashes)
+          callback()
+        },
+      })
+
+      if (options.customWriter) {
+        geohashStream.pipe(options.customWriter)
+      } else {
+        geohashStream.pipe(writer) // Kick off the stream
+      }
+
+      geohashStream.on("end", () => {
+        resolve()
+      })
+    })
+  })
+
+  return Promise.all(allShapePromises).then(() => allGeohashes)
 }
 
 class GeohashStream extends Stream.Readable {
@@ -94,6 +120,15 @@ class GeohashStream extends Stream.Readable {
     // has been covered by the matching geohashes
     // Prevent duplicate geohashes
     this.rowProgress = -Infinity
+  }
+
+  _read(size) {
+    const rowGeohashes = this.processNextRow()
+    if (rowGeohashes !== null) {
+      this.push(rowGeohashes) // Push data out of the stream
+    } else {
+      this.push(null) // End the stream
+    }
   }
 
   processNextRow() {
@@ -241,54 +276,6 @@ class GeohashStream extends Stream.Readable {
 
     return geohashList
   }
-
-  _read(size) {
-    const rowGeohashes = this.processNextRow()
-    if (rowGeohashes !== null) {
-      this.push(rowGeohashes) // Push data out of the stream
-    } else {
-      this.push(null) // End the stream
-    }
-  }
-}
-
-const defaultOptions = {
-  precision: 6,
-  hashMode: "intersect",
-  minIntersect: 0,
-  customWriter: null,
-}
-
-async function shape2geohash(shapes, options = {}) {
-  options = { ...defaultOptions, ...options } // overwrite default options
-  const allShapes = isMulti(shapes) ? shapes : [shapes] // make sure allShapes is always an array
-  const allGeohashes = []
-
-  const allShapePromises = allShapes.map(shape => {
-    return new Promise((resolve, reject) => {
-      const geohashStream = new GeohashStream(shape, options)
-
-      const writer = new Stream.Writable({
-        objectMode: true,
-        write: (rowGeohashes, enc, callback) => {
-          allGeohashes.push(...rowGeohashes)
-          callback()
-        },
-      })
-
-      if (options.customWriter) {
-        geohashStream.pipe(options.customWriter)
-      } else {
-        geohashStream.pipe(writer) // Kick off the stream
-      }
-
-      geohashStream.on("end", () => {
-        resolve()
-      })
-    })
-  })
-
-  return Promise.all(allShapePromises).then(() => allGeohashes)
 }
 
 module.exports = shape2geohash

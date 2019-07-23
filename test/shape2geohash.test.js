@@ -5,10 +5,12 @@ const { default: turfCentroid } = require("@turf/centroid")
 const { polygon: turfPolygon, multiPolygon: turfMultiPolygon } = require("@turf/helpers")
 const ngeohash = require("ngeohash")
 
-const berlin = require("./berlin")
+const berlin = require("./berlin.json")
 const shape2geohash = require("../index")
+const helpers = require("../helpers")
+const geojsonExamples = require("./geojsonExamples")
 
-const berlinPolygon = berlin.fields.geo_shape.coordinates[0]
+const berlinPolygon = berlin.fields.geo_shape.coordinates
 
 const maps = []
 
@@ -38,7 +40,15 @@ function isMulti(coordinates) {
 }
 
 function bboxToCoordinates(bbox) {
-  return [[[bbox[1], bbox[2]], [bbox[3], bbox[2]], [bbox[3], bbox[0]], [bbox[1], bbox[0]], [bbox[1], bbox[2]]]]
+  return [
+    [
+      [bbox[1], bbox[2]],
+      [bbox[3], bbox[2]],
+      [bbox[3], bbox[0]],
+      [bbox[1], bbox[0]],
+      [bbox[1], bbox[2]],
+    ],
+  ]
 }
 
 function visualizeTestCase(coordinates, geohashes, description) {
@@ -63,12 +73,40 @@ function visualizeTestCase(coordinates, geohashes, description) {
   })
 }
 
+describe.only("Test GeoJSON parsing", () => {
+  test("Type: Polygon", async () => {
+    const a = helpers.extractCoordinatesFromGeoJSON(berlin.fields.geo_shape)
+    const b = berlinPolygon
+
+    expect(a.length).toBe(1)
+    expect(a[0]).toBe(b)
+
+    const geohashesA = await shape2geohash(berlin.fields.geo_shape, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(berlinPolygon)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+
+  test("Type: MultiPolygon", async () => {
+    const { MultiPolygon } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon)
+    const b = MultiPolygon.coordinates
+
+    expect(a.length).toBe(b.length)
+
+    const geohashesA = await shape2geohash(MultiPolygon, { isGeoJSON: true })
+    const geohashesB = await shape2geohash(MultiPolygon.coordinates)
+
+    expect(geohashesA.length).toBe(geohashesB.length)
+  })
+})
+
 describe("Berlin tests", () => {
   test("intersect", async () => {
-    const geohashes = await shape2geohash([berlinPolygon])
+    const geohashes = await shape2geohash(berlinPolygon)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase([berlinPolygon], geohashes, "Berlin insersect")
+    visualizeTestCase(berlinPolygon, geohashes, "Berlin insersect")
   })
 
   test("envelope", async () => {
@@ -235,7 +273,16 @@ describe("Manual tests", () => {
       ],
     ]
 
-    const expectedGeohashes = ["u336z", "u33db", "u33dc", "u336x", "u33d9", "u336r", "u33d2", "u33d3"]
+    const expectedGeohashes = [
+      "u336z",
+      "u33db",
+      "u33dc",
+      "u336x",
+      "u33d9",
+      "u336r",
+      "u33d2",
+      "u33d3",
+    ]
     const geohashes = await shape2geohash(polygon, {
       precision: expectedGeohashes[0].length,
     })
@@ -259,7 +306,16 @@ describe("Manual tests", () => {
       ],
     ]
 
-    const expectedGeohashes = ["u336z", "u33db", "u33dc", "u336x", "u33d9", "u336r", "u33d2", "u33d3"]
+    const expectedGeohashes = [
+      "u336z",
+      "u33db",
+      "u33dc",
+      "u336x",
+      "u33d9",
+      "u336r",
+      "u33d2",
+      "u33d3",
+    ]
     const geohashes = await shape2geohash(polygon, {
       precision: expectedGeohashes[0].length,
       hashMode: "border",
@@ -309,7 +365,17 @@ describe("Manual tests", () => {
       ],
     ]
 
-    const expectedGeohashes = ["u336z", "u33db", "u33dc", "u336x", "u33d8", "u33d9", "u336r", "u33d2", "u33d3"]
+    const expectedGeohashes = [
+      "u336z",
+      "u33db",
+      "u33dc",
+      "u336x",
+      "u33d8",
+      "u33d9",
+      "u336r",
+      "u33d2",
+      "u33d3",
+    ]
     const geohashes = await shape2geohash(polygon, {
       precision: expectedGeohashes[0].length,
       hashMode: "envelope",
@@ -380,7 +446,18 @@ describe("Manual tests", () => {
   test("Test line with hashMode 'envelope'", async () => {
     const line = [[13.286631, 52.501994], [13.383104, 52.443386], [13.481295, 52.459287]]
 
-    const expectedGeohashes = ["u336w", "u336x", "u33d8", "u33d9", "u33dd", "u336q", "u336r", "u33d2", "u33d3", "u33d6"]
+    const expectedGeohashes = [
+      "u336w",
+      "u336x",
+      "u33d8",
+      "u33d9",
+      "u33dd",
+      "u336q",
+      "u336r",
+      "u33d2",
+      "u33d3",
+      "u33d6",
+    ]
 
     const geohashes = await shape2geohash(line, {
       precision: expectedGeohashes[0].length,
