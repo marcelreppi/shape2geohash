@@ -25,17 +25,17 @@ const defaultOptions = {
   hashMode: "intersect",
   minIntersect: 0,
   customWriter: null,
-  isGeoJSON: false,
 }
 
 async function shape2geohash(shapes, options = {}) {
   options = { ...defaultOptions, ...options } // overwrite default options
 
   let allShapes = null
-  if (options.isGeoJSON) {
-    allShapes = extractCoordinatesFromGeoJSON(shapes)
+  if (Array.isArray(shapes)) {
+    // The input is either an array of polygon coordinates or a list of polygons
+    allShapes = isMulti(shapes) ? shapes : [shapes] // Make sure allShapes is always an array of shapes
   } else {
-    allShapes = isMulti(shapes) ? shapes : [shapes] // make sure allShapes is always an array of shapes
+    allShapes = extractCoordinatesFromGeoJSON(shapes)
   }
 
   const allGeohashes = []

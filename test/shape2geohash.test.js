@@ -10,7 +10,7 @@ const shape2geohash = require("../index")
 const helpers = require("../helpers")
 const geojsonExamples = require("./geojsonExamples")
 
-const berlinPolygon = berlin.fields.geo_shape.coordinates
+const berlinPolygon = berlin.fields.geo_shape
 
 const maps = []
 
@@ -75,45 +75,23 @@ function visualizeTestCase(coordinates, geohashes, description) {
 
 describe("Test GeoJSON parsing", () => {
   test("Type: FeatureCollection", async () => {
-    const { FeatureCollection1 } = geojsonExamples
-
-    const geohashesA = await shape2geohash(FeatureCollection1, { isGeoJSON: true })
-
-    const geohashesB = []
-    for (let feature of FeatureCollection1.features) {
-      const gh = await shape2geohash(feature.geometry.coordinates)
-      geohashesB.push(...gh)
+    const { FeatureCollection } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(FeatureCollection)
+    const b = []
+    for (let feature of FeatureCollection.features) {
+      b.push(feature.geometry)
     }
 
-    expect(geohashesA.length).toBe(geohashesB.length)
+    expect(a.length).toBe(b.length)
   })
 
-  test("Type: Feature (1)", async () => {
-    const { Feature1 } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(Feature1)
-    const b = Feature1.geometry.coordinates
+  test("Type: Feature", async () => {
+    const { Feature } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(Feature)
+    const b = Feature.geometry.coordinates
 
     expect(a.length).toBe(1)
     expect(a[0]).toBe(b)
-
-    const geohashesA = await shape2geohash(Feature1, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(b)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
-  })
-
-  test("Type: Feature (2)", async () => {
-    const { Feature1: Feature2 } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(Feature2)
-    const b = Feature2.geometry.coordinates
-
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
-
-    const geohashesA = await shape2geohash(Feature2, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(b)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
   })
 
   test("Type: Polygon", async () => {
@@ -123,33 +101,14 @@ describe("Test GeoJSON parsing", () => {
 
     expect(a.length).toBe(1)
     expect(a[0]).toBe(b)
-
-    const geohashesA = await shape2geohash(Polygon, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(b)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
   })
 
-  test("Type: MultiPolygon (1)", async () => {
-    const { MultiPolygon1 } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)
-    const b = MultiPolygon1.coordinates
+  test("Type: MultiPolygon", async () => {
+    const { MultiPolygon } = geojsonExamples
+    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon)
+    const b = MultiPolygon.coordinates
 
     expect(a.length).toBe(b.length)
-
-    const geohashesA = await shape2geohash(MultiPolygon1, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(MultiPolygon1.coordinates)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
-  })
-
-  test("Type: MultiPolygon (2)", async () => {
-    const { MultiPolygon2 } = geojsonExamples
-
-    const geohashesA = await shape2geohash(MultiPolygon2, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(MultiPolygon2.coordinates)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
   })
 
   test("Type: LineString", async () => {
@@ -159,11 +118,6 @@ describe("Test GeoJSON parsing", () => {
 
     expect(a.length).toBe(1)
     expect(a[0]).toBe(b)
-
-    const geohashesA = await shape2geohash(LineString, { isGeoJSON: true })
-    const geohashesB = await shape2geohash(b)
-
-    expect(geohashesA.length).toBe(geohashesB.length)
   })
 
   test("Type: MultiLineString", async () => {
@@ -172,15 +126,6 @@ describe("Test GeoJSON parsing", () => {
     const b = MultiLineString.coordinates
 
     expect(a.length).toBe(b.length)
-
-    const geohashesA = await shape2geohash(MultiLineString, { isGeoJSON: true })
-    const geohashesB = []
-    for (let line of MultiLineString.coordinates) {
-      const gh = await shape2geohash(line)
-      geohashesB.push(...gh)
-    }
-
-    expect(geohashesA.length).toBe(geohashesB.length)
   })
 
   test("Type: Point", async () => {
@@ -190,11 +135,6 @@ describe("Test GeoJSON parsing", () => {
 
     expect(a.length).toBe(1)
     expect(a[0]).toBe(b)
-
-    // const geohashesA = await shape2geohash(Point, { isGeoJSON: true })
-    // const geohashesB = await shape2geohash(b)
-
-    // expect(geohashesA.length).toBe(geohashesB.length)
   })
 
   test("Type: MultiPoint", async () => {
@@ -203,11 +143,6 @@ describe("Test GeoJSON parsing", () => {
     const b = MultiPoint.coordinates
 
     expect(a.length).toBe(b.length)
-
-    // const geohashesA = await shape2geohash(MultiPoint, { isGeoJSON: true })
-    // const geohashesB = await shape2geohash(b)
-
-    // expect(geohashesA.length).toBe(geohashesB.length)
   })
 })
 
@@ -216,16 +151,16 @@ describe("Berlin tests", () => {
     const geohashes = await shape2geohash(berlinPolygon)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase(berlinPolygon, geohashes, "Berlin insersect")
+    visualizeTestCase([berlinPolygon.coordinates], geohashes, "Berlin insersect")
   })
 
   test("envelope", async () => {
-    const geohashes = await shape2geohash([berlinPolygon], {
+    const geohashes = await shape2geohash(berlinPolygon, {
       hashMode: "envelope",
     })
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase([berlinPolygon], geohashes, "Berlin envelope")
+    visualizeTestCase([berlinPolygon.coordinates], geohashes, "Berlin envelope")
   })
 
   test("insideOnly", async () => {
@@ -265,7 +200,7 @@ describe("Berlin tests", () => {
       "u33dk",
       "u33dn",
     ]
-    const geohashes = await shape2geohash([berlinPolygon], {
+    const geohashes = await shape2geohash(berlinPolygon, {
       hashMode: "insideOnly",
       precision: 5,
     })
@@ -275,16 +210,16 @@ describe("Berlin tests", () => {
     expect(geohashes.length).toBe(expectedGeohashes.length)
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase([berlinPolygon], geohashes, "Berlin insideOnly")
+    visualizeTestCase([berlinPolygon.coordinates], geohashes, "Berlin insideOnly")
   })
 
   test("border", async () => {
-    const geohashes = await shape2geohash([berlinPolygon], {
+    const geohashes = await shape2geohash(berlinPolygon, {
       hashMode: "border",
     })
     const duplicates = checkForDuplicates(geohashes)
     expect(duplicates).toBe(null)
-    visualizeTestCase([berlinPolygon], geohashes, "Berlin border")
+    visualizeTestCase([berlinPolygon.coordinates], geohashes, "Berlin border")
   })
 })
 
@@ -293,7 +228,6 @@ describe("Manual tests", () => {
     const testGeohash = "u336xps"
     const geohashes = await shape2geohash(geojsonExamples.Point, {
       precision: testGeohash.length,
-      isGeoJSON: true,
     })
     expect(geohashes.length).toBe(1)
     expect(geohashes[0]).toBe(testGeohash)
@@ -303,7 +237,6 @@ describe("Manual tests", () => {
     const testGeohashes = ["u336xps", "u336xnw"]
     const geohashes = await shape2geohash(geojsonExamples.MultiPoint, {
       precision: testGeohashes[0].length,
-      isGeoJSON: true,
     })
     expect(geohashes.length).toBe(2)
     expect(geohashes[0]).toBe(testGeohashes[0])
@@ -720,9 +653,9 @@ describe("Test GeoJSON parsing errors", () => {
   })
 
   test("Missing coordinates (2)", async () => {
-    const { MultiPolygon1 } = geojsonExamples
-    delete MultiPolygon1.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon1)).toThrowError()
+    const { MultiPolygon } = geojsonExamples
+    delete MultiPolygon.coordinates
+    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon)).toThrowError()
   })
 
   test("Missing coordinates (3)", async () => {
@@ -750,9 +683,9 @@ describe("Test GeoJSON parsing errors", () => {
   })
 
   test("Missing geometry", async () => {
-    const { Feature1 } = geojsonExamples
-    delete Feature1.geometry
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature1)).toThrowError()
+    const { Feature } = geojsonExamples
+    delete Feature.geometry
+    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature)).toThrowError()
   })
 
   test("Non-Multi MultiPolygon", async () => {
