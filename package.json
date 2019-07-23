@@ -4,8 +4,8 @@
   "description": "Turns any GeoJSON shape into a list of geohashes",
   "main": "index.js",
   "scripts": {
-    "test": "jest --watch",
-    "jest": "jest",
+    "test": "jest",
+    "jest": "jest --watch",
     "testCoverage": "jest --coverage"
   },
   "repository": {
