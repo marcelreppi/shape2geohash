@@ -1,17 +1,17 @@
-module.exports = {
-  datasetid: "deutschland-lander",
-  recordid: "ef603e925ff5f0dc6ee9a2b45f953e2b5286987f",
-  fields: {
-    name_0: "Germany",
-    shape_area: 0.11715301026,
-    id_0: 60,
-    engtype_1: "State",
-    geo_point_2d: [52.499336300010896, 13.408782224444284],
-    hasc_1: "DE.BE",
-    validto_1: "Present",
-    geo_shape: {
-      type: "Polygon",
-      coordinates: [
+{
+  "datasetid": "deutschland-lander",
+  "recordid": "ef603e925ff5f0dc6ee9a2b45f953e2b5286987f",
+  "fields": {
+    "name_0": "Germany",
+    "shape_area": 0.11715301026,
+    "id_0": 60,
+    "engtype_1": "State",
+    "geo_point_2d": [52.499336300010896, 13.408782224444284],
+    "hasc_1": "DE.BE",
+    "validto_1": "Present",
+    "geo_shape": {
+      "type": "Polygon",
+      "coordinates": [
         [
           [13.482250000000136, 52.675022000000126],
           [13.481911000000139, 52.667599],
@@ -251,20 +251,20 @@ module.exports = {
           [13.457230000000152, 52.66055],
           [13.46365, 52.66787],
           [13.46974, 52.667781],
-          [13.482250000000136, 52.675022000000126],
-        ],
-      ],
+          [13.482250000000136, 52.675022000000126]
+        ]
+      ]
     },
-    type_1: "Land",
-    id_1: 755,
-    iso: "DEU",
-    validfr_1: "Unknown",
-    shape_leng: 2.63121403459,
-    name_1: "Berlin",
+    "type_1": "Land",
+    "id_1": 755,
+    "iso": "DEU",
+    "validfr_1": "Unknown",
+    "shape_leng": 2.63121403459,
+    "name_1": "Berlin"
   },
-  geometry: {
-    type: "Point",
-    coordinates: [13.408782224444284, 52.499336300010896],
+  "geometry": {
+    "type": "Point",
+    "coordinates": [13.408782224444284, 52.499336300010896]
   },
-  record_timestamp: "2016-10-20T11:06:58+02:00",
+  "record_timestamp": "2016-10-20T11:06:58+02:00"
 }
