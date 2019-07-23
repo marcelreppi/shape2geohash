@@ -25,6 +25,7 @@ const defaultOptions = {
   hashMode: "intersect",
   minIntersect: 0,
   customWriter: null,
+  allowDuplicates: true,
 }
 
 async function shape2geohash(shapes, options = {}) {
@@ -38,16 +39,36 @@ async function shape2geohash(shapes, options = {}) {
     allShapes = extractCoordinatesFromGeoJSON(shapes)
   }
 
-  const allGeohashes = []
+  let allGeohashes = []
+
+  if (!options.allowDuplicates) {
+    allGeohashes = new Set()
+  }
+
+  const addGeohashes = (...geohashes) => {
+    if (!options.allowDuplicates) {
+      geohashes.forEach(gh => allGeohashes.add(gh))
+      return
+    }
+
+    allGeohashes.push(...geohashes)
+  }
 
   const allShapePromises = allShapes.map(shape => {
     return new Promise((resolve, reject) => {
+      if (isPoint(shape)) {
+        // Optimization for points. No need for streams.
+        addGeohashes(ngeohash.encode(...shape, options.precision))
+        resolve()
+        return
+      }
+
       const geohashStream = new GeohashStream(shape, options)
 
       const writer = new Stream.Writable({
         objectMode: true,
         write: (rowGeohashes, enc, callback) => {
-          allGeohashes.push(...rowGeohashes)
+          addGeohashes(...rowGeohashes)
           callback()
         },
       })
@@ -64,7 +85,7 @@ async function shape2geohash(shapes, options = {}) {
     })
   })
 
-  return Promise.all(allShapePromises).then(() => allGeohashes)
+  return Promise.all(allShapePromises).then(() => Array.from(allGeohashes))
 }
 
 class GeohashStream extends Stream.Readable {
@@ -73,14 +94,9 @@ class GeohashStream extends Stream.Readable {
 
     this.options = options
 
-    this.originalShape = null
-    if (isPoint(shapeCoordinates)) {
-      this.originalShape = turfPoint(shapeCoordinates)
-    } else if (isLine(shapeCoordinates)) {
-      this.originalShape = turfLine(shapeCoordinates)
-    } else {
-      this.originalShape = turfPolygon(shapeCoordinates)
-    }
+    this.originalShape = isLine(shapeCoordinates)
+      ? turfLine(shapeCoordinates)
+      : turfPolygon(shapeCoordinates)
 
     // [minX, minY, maxX, maxY]
     const originalEnvelopeBbox = turfBbox(turfEnvelope(this.originalShape))
@@ -156,11 +172,7 @@ class GeohashStream extends Stream.Readable {
     if (this.options.hashMode === "envelope") {
       geohashes.push(...this.processRowSegment(rowPolygon.geometry.coordinates))
     } else {
-      if (this.originalShape.geometry.type === "Point") {
-        geohashes.push(
-          ngeohash.encode(...this.originalShape.geometry.coordinates, this.options.precision)
-        )
-      } else if (this.originalShape.geometry.type === "LineString") {
+      if (this.originalShape.geometry.type === "LineString") {
         const lineSegments = turfLineSplit(this.originalShape, rowPolygon).features
 
         let evenPairs

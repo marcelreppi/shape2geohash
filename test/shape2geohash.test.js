@@ -224,6 +224,21 @@ describe("Berlin tests", () => {
 })
 
 describe("Manual tests", () => {
+  test("Overlapping polygons -> Allow duplicates", async () => {
+    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons)
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).not.toBe(null)
+    expect(duplicates.length).not.toBe(0)
+  })
+
+  test("Overlapping polygons -> Don't allow duplicates", async () => {
+    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons, {
+      allowDuplicates: false,
+    })
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
+  })
+
   test("Test point", async () => {
     const testGeohash = "u336xps"
     const geohashes = await shape2geohash(geojsonExamples.Point, {

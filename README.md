@@ -73,6 +73,7 @@ const defaultOptions = {
   precision: 6,
   hashMode: "intersect",
   minIntersect: 0,
+  allowDuplicates: true,
   customWriter: null
 }
 ```
@@ -84,6 +85,7 @@ const defaultOptions = {
   * `insideOnly`: Includes only the geohashes that are fully within the polygon.
   * `border`: Includes only the geohashes that intersect with the border of the polygon.
 * `minIntersect`: Percentage value between `0` and `1`. Defines the minimum area of a geohash that needs to be covered by the polygon to be included in the geohash list. This is only relevant for the edge of the polygon when using the hashMode `intersect`.
+* `allowDuplicates`: Determines if the output array may contain duplicate geohashes. These can occur when, for example, multiple polygons overlap.
 * `customWriter`: Custom `Writable` Stream that can used for custom stream processing. See [Custom Stream Processing](#custom-stream-processing) section for more details.
 
 ## Custom Stream Processing
