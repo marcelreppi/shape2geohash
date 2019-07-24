@@ -1,85 +1,46 @@
-// console.log("Polygon:", polygon)
-// console.log("Geohashes:", geohashes)
-// console.log("Map Center:", mapCenter)
+maps.forEach((mapData, i) => {
+  const mapContainer = document.createElement("div")
+  mapContainer.className = "single-map-container"
 
-function initMaps() {
-  maps.forEach(mapData => {
-    const mapContainer = document.createElement("div")
-    mapContainer.className = "single-map-container"
+  const mapElement = document.createElement("div")
+  mapElement.className = "map"
+  mapElement.id = `map${i}`
 
-    const mapElement = document.createElement("div")
-    mapElement.className = "map"
+  const descElement = document.createElement("div")
+  descElement.className = "description"
+  descElement.textContent = mapData.description
 
-    const descElement = document.createElement("div")
-    descElement.className = "description"
-    descElement.textContent = mapData.description
+  mapContainer.appendChild(mapElement)
+  mapContainer.appendChild(descElement)
+  document.getElementById("maps-container").appendChild(mapContainer)
 
-    mapContainer.appendChild(mapElement)
-    mapContainer.appendChild(descElement)
-    document.getElementById("maps-container").appendChild(mapContainer)
-
-    const map = new google.maps.Map(mapElement, {
-      center: { lng: mapData.centroid[0], lat: mapData.centroid[1] },
-      zoom: 9.5,
-    })
-
-    function handlePolygon(coordinates) {
-      let outerPath = coordinates[0]
-      let innerPath = coordinates[1] || []
-
-      outerPath = outerPath.map(([lng, lat]) => {
-        return {
-          lat,
-          lng,
-        }
-      })
-
-      innerPath = innerPath
-        .map(([lng, lat]) => {
-          return {
-            lat,
-            lng,
-          }
-        })
-        .reverse()
-
-      // Construct the polygon.
-      const mapPolygon = new google.maps.Polygon({
-        paths: [outerPath, innerPath],
-        strokeColor: "#FF0000",
-        strokeOpacity: 0.3,
-        strokeWeight: 2,
-        fillColor: "#FF0000",
-        fillOpacity: 0.1,
-      })
-      mapPolygon.setMap(map)
-    }
-
-    // Draw all polygons
-    if (mapData.shape.type === "MultiPolygon") {
-      mapData.shape.coordinates.forEach(handlePolygon)
-    } else {
-      handlePolygon(mapData.shape.coordinates)
-    }
-
-    // Draw geohashes
-    mapData.geohashes.forEach(gh => {
-      const [minlat, minlon, maxlat, maxlon] = geohash.decode_bbox(gh)
-      const coordinates = [
-        { lat: maxlat, lng: minlon },
-        { lat: maxlat, lng: maxlon },
-        { lat: minlat, lng: maxlon },
-        { lat: minlat, lng: minlon },
-      ]
-      const geohashPolygon = new google.maps.Polygon({
-        paths: coordinates,
-        strokeColor: "#25c3fc",
-        strokeOpacity: 0.3,
-        strokeWeight: 2,
-        fillColor: "#25c3fc",
-        fillOpacity: 0.2,
-      })
-      geohashPolygon.setMap(map)
-    })
+  const map = L.map(`map${i}`, {
+    center: [mapData.centroid[1], mapData.centroid[0]],
+    zoomSnap: 0.1,
+    zoom: 9.7,
   })
-}
+
+  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+    attribution:
+      'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: "mapbox.streets",
+    accessToken:
+      "pk.eyJ1IjoibWFyY2VscmVwcGkiLCJhIjoiY2p5aDVuMm55MDdwdzNqczFzZnI0dmhtcyJ9.nykEIDD-qR31rXlvinoM0A",
+  }).addTo(map)
+
+  L.geoJSON(mapData.shape, {
+    color: "#000000",
+    weight: 2,
+    opacity: 0.5,
+  }).addTo(map)
+
+  // Draw geohashes
+  mapData.geohashes.forEach(gh => {
+    const [minlat, minlon, maxlat, maxlon] = geohash.decode_bbox(gh)
+    L.polygon(
+      [[maxlat, minlon], [maxlat, maxlon], [minlat, maxlon], [minlat, minlon], [maxlat, minlon]],
+      { color: "#25c3fc", opacity: 0.5, weight: 1 }
+    ).addTo(map)
+  })
+})
