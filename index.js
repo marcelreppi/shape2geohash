@@ -151,7 +151,6 @@ class GeohashStream extends Stream.Readable {
 
   _read(size) {
     if (this.shapeIsPoint) {
-      console.log(this.pointCoordinates)
       this.push([ngeohash.encode(...this.pointCoordinates.reverse(), this.options.precision)])
       this.push(null)
       return
