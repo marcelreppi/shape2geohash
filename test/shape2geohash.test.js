@@ -73,79 +73,6 @@ function visualizeTestCase(coordinates, geohashes, description) {
   })
 }
 
-describe("Test GeoJSON parsing", () => {
-  test("Type: FeatureCollection", async () => {
-    const { FeatureCollection } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(FeatureCollection)
-    const b = []
-    for (let feature of FeatureCollection.features) {
-      b.push(feature.geometry)
-    }
-
-    expect(a.length).toBe(b.length)
-  })
-
-  test("Type: Feature", async () => {
-    const { Feature } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(Feature)
-    const b = Feature.geometry.coordinates
-
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
-  })
-
-  test("Type: Polygon", async () => {
-    const { Polygon } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(Polygon)
-    const b = Polygon.coordinates
-
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
-  })
-
-  test("Type: MultiPolygon", async () => {
-    const { MultiPolygon } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(MultiPolygon)
-    const b = MultiPolygon.coordinates
-
-    expect(a.length).toBe(b.length)
-  })
-
-  test("Type: LineString", async () => {
-    const { LineString } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(LineString)
-    const b = LineString.coordinates
-
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
-  })
-
-  test("Type: MultiLineString", async () => {
-    const { MultiLineString } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(MultiLineString)
-    const b = MultiLineString.coordinates
-
-    expect(a.length).toBe(b.length)
-  })
-
-  test("Type: Point", async () => {
-    const { Point } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(Point)
-    const b = Point.coordinates
-
-    expect(a.length).toBe(1)
-    expect(a[0]).toBe(b)
-  })
-
-  test("Type: MultiPoint", async () => {
-    const { MultiPoint } = geojsonExamples
-    const a = helpers.extractCoordinatesFromGeoJSON(MultiPoint)
-    const b = MultiPoint.coordinates
-
-    expect(a.length).toBe(b.length)
-  })
-})
-
 describe("Berlin tests", () => {
   test("intersect", async () => {
     const geohashes = await shape2geohash(berlinPolygon)
@@ -224,40 +151,6 @@ describe("Berlin tests", () => {
 })
 
 describe("Manual tests", () => {
-  test("Overlapping polygons -> Allow duplicates", async () => {
-    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons)
-    const duplicates = checkForDuplicates(geohashes)
-    expect(duplicates).not.toBe(null)
-    expect(duplicates.length).not.toBe(0)
-  })
-
-  test("Overlapping polygons -> Don't allow duplicates", async () => {
-    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons, {
-      allowDuplicates: false,
-    })
-    const duplicates = checkForDuplicates(geohashes)
-    expect(duplicates).toBe(null)
-  })
-
-  test("Test point", async () => {
-    const testGeohash = "u336xps"
-    const geohashes = await shape2geohash(geojsonExamples.Point, {
-      precision: testGeohash.length,
-    })
-    expect(geohashes.length).toBe(1)
-    expect(geohashes[0]).toBe(testGeohash)
-  })
-
-  test("Test multi point", async () => {
-    const testGeohashes = ["u336xps", "u336xnw"]
-    const geohashes = await shape2geohash(geojsonExamples.MultiPoint, {
-      precision: testGeohashes[0].length,
-    })
-    expect(geohashes.length).toBe(2)
-    expect(geohashes[0]).toBe(testGeohashes[0])
-    expect(geohashes[1]).toBe(testGeohashes[1])
-  })
-
   test("Test exact geohash", async () => {
     const testGeohash = "u336x"
     const bbox = ngeohash.decode_bbox(testGeohash)
@@ -551,63 +444,6 @@ describe("Manual tests", () => {
     visualizeTestCase(line, geohashes, "Test line with hashMode 'envelope'")
   })
 
-  test("Test custom writer", async () => {
-    const polygon = [
-      [
-        [13.331187, 52.49439],
-        [13.371699, 52.509027],
-        [13.4245712, 52.50401228],
-        [13.41221166, 52.457175],
-        [13.3414871, 52.4504801],
-        [13.331187, 52.49439],
-      ],
-    ]
-
-    const expectedGeohashes = [["u336x", "u33d8", "u33d9"], ["u336r", "u33d2", "u33d3"]]
-
-    let i = 0
-    const myCustomWriter = new Stream.Writable({
-      objectMode: true, // THIS IS IMPORTANT
-      write: (rowGeohashes, enc, callback) => {
-        rowGeohashes.forEach(gh => {
-          expect(expectedGeohashes[i]).toContain(gh)
-        })
-        expect(rowGeohashes.length).toBe(expectedGeohashes[i].length)
-
-        const duplicates = checkForDuplicates(rowGeohashes)
-        expect(duplicates).toBe(null)
-        i++
-
-        callback()
-      },
-    })
-
-    await shape2geohash(polygon, {
-      customWriter: myCustomWriter,
-      precision: expectedGeohashes[0][0].length,
-      // ...other options
-    })
-  })
-
-  test("Test custom writer with MultiPoint", async () => {
-    let writerWasCalled = false
-    const myCustomWriter = new Stream.Writable({
-      objectMode: true, // THIS IS IMPORTANT
-      write: (rowGeohashes, enc, callback) => {
-        writerWasCalled = true
-        expect(rowGeohashes.length).toBe(1)
-        callback()
-      },
-    })
-
-    await shape2geohash(geojsonExamples.MultiPoint, {
-      customWriter: myCustomWriter,
-      // ...other options
-    })
-
-    expect(writerWasCalled).toBe(true)
-  })
-
   test("Test minIntersect 0.5", async () => {
     const polygon = [
       [
@@ -671,60 +507,97 @@ describe("Manual tests", () => {
     expect(duplicates).toBe(null)
     visualizeTestCase(polygon, geohashes, "Test minIntersect 0.25")
   })
-})
 
-describe("Test GeoJSON parsing errors", () => {
-  test("Missing type", async () => {
-    const { Polygon } = geojsonExamples
-    delete Polygon.type
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  test("Test custom writer", async () => {
+    const polygon = [
+      [
+        [13.331187, 52.49439],
+        [13.371699, 52.509027],
+        [13.4245712, 52.50401228],
+        [13.41221166, 52.457175],
+        [13.3414871, 52.4504801],
+        [13.331187, 52.49439],
+      ],
+    ]
+
+    const expectedGeohashes = [["u336x", "u33d8", "u33d9"], ["u336r", "u33d2", "u33d3"]]
+
+    let i = 0
+    const myCustomWriter = new Stream.Writable({
+      objectMode: true, // THIS IS IMPORTANT
+      write: (rowGeohashes, enc, callback) => {
+        rowGeohashes.forEach(gh => {
+          expect(expectedGeohashes[i]).toContain(gh)
+        })
+        expect(rowGeohashes.length).toBe(expectedGeohashes[i].length)
+
+        const duplicates = checkForDuplicates(rowGeohashes)
+        expect(duplicates).toBe(null)
+        i++
+
+        callback()
+      },
+    })
+
+    await shape2geohash(polygon, {
+      customWriter: myCustomWriter,
+      precision: expectedGeohashes[0][0].length,
+      // ...other options
+    })
   })
 
-  test("Missing coordinates (1)", async () => {
-    const { Polygon } = geojsonExamples
-    delete Polygon.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Polygon)).toThrowError()
+  test("Test custom writer with Point", async () => {
+    let writerWasCalled = false
+    const myCustomWriter = new Stream.Writable({
+      objectMode: true, // THIS IS IMPORTANT
+      write: (rowGeohashes, enc, callback) => {
+        writerWasCalled = true
+        expect(rowGeohashes.length).toBe(1)
+        expect(rowGeohashes[0]).toBe("u336xp")
+        callback()
+      },
+    })
+
+    await shape2geohash(geojsonExamples.Point(), {
+      customWriter: myCustomWriter,
+      // ...other options
+    })
+
+    expect(writerWasCalled).toBe(true)
   })
 
-  test("Missing coordinates (2)", async () => {
-    const { MultiPolygon } = geojsonExamples
-    delete MultiPolygon.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPolygon)).toThrowError()
+  test("Overlapping polygons -> Allow duplicates", async () => {
+    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons())
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).not.toBe(null)
+    expect(duplicates.length).not.toBe(0)
   })
 
-  test("Missing coordinates (3)", async () => {
-    const { LineString } = geojsonExamples
-    delete LineString.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(LineString)).toThrowError()
+  test("Overlapping polygons -> Don't allow duplicates", async () => {
+    const geohashes = await shape2geohash(geojsonExamples.overlappingPolygons(), {
+      allowDuplicates: false,
+    })
+    const duplicates = checkForDuplicates(geohashes)
+    expect(duplicates).toBe(null)
   })
 
-  test("Missing coordinates (4)", async () => {
-    const { MultiLineString } = geojsonExamples
-    delete MultiLineString.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiLineString)).toThrowError()
+  test("Test point", async () => {
+    const testGeohash = "u336xps"
+    const geohashes = await shape2geohash(geojsonExamples.Point(), {
+      precision: testGeohash.length,
+    })
+    expect(geohashes.length).toBe(1)
+    expect(geohashes[0]).toBe(testGeohash)
   })
 
-  test("Missing coordinates (5)", async () => {
-    const { Point } = geojsonExamples
-    delete Point.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Point)).toThrowError()
-  })
-
-  test("Missing coordinates (6)", async () => {
-    const { MultiPoint } = geojsonExamples
-    delete MultiPoint.coordinates
-    expect(() => helpers.extractCoordinatesFromGeoJSON(MultiPoint)).toThrowError()
-  })
-
-  test("Missing geometry", async () => {
-    const { Feature } = geojsonExamples
-    delete Feature.geometry
-    expect(() => helpers.extractCoordinatesFromGeoJSON(Feature)).toThrowError()
-  })
-
-  test("Non-Multi MultiPolygon", async () => {
-    const { wrongMultiPolygon } = geojsonExamples
-    expect(() => helpers.extractCoordinatesFromGeoJSON(wrongMultiPolygon)).toThrowError()
+  test("Test multi point", async () => {
+    const testGeohashes = ["u336xps", "u336xnw"]
+    const geohashes = await shape2geohash(geojsonExamples.MultiPoint(), {
+      precision: testGeohashes[0].length,
+    })
+    expect(geohashes.length).toBe(2)
+    expect(geohashes[0]).toBe(testGeohashes[0])
+    expect(geohashes[1]).toBe(testGeohashes[1])
   })
 })
 
