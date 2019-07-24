@@ -19,7 +19,9 @@
     "line",
     "polygon2geohash",
     "line2geohash",
-    "geojson"
+    "geojson",
+    "point",
+    "point2geohash"
   ],
   "author": "",
   "license": "MIT",
