@@ -45,20 +45,19 @@ async function shape2geohash(shapes, options = {}) {
     allGeohashes = new Set()
   }
 
-  const addGeohashes = (...geohashes) => {
+  const addGeohashes = geohashes => {
     if (!options.allowDuplicates) {
       geohashes.forEach(gh => allGeohashes.add(gh))
       return
     }
-
     allGeohashes.push(...geohashes)
   }
 
   const allShapePromises = allShapes.map(shape => {
     return new Promise((resolve, reject) => {
-      if (isPoint(shape)) {
+      if (isPoint(shape) && options.customWriter === null) {
         // Optimization for points. No need for streams.
-        addGeohashes(ngeohash.encode(...shape, options.precision))
+        addGeohashes([ngeohash.encode(...shape, options.precision)])
         resolve()
         return
       }
@@ -68,7 +67,7 @@ async function shape2geohash(shapes, options = {}) {
       const writer = new Stream.Writable({
         objectMode: true,
         write: (rowGeohashes, enc, callback) => {
-          addGeohashes(...rowGeohashes)
+          addGeohashes(rowGeohashes)
           callback()
         },
       })
@@ -93,6 +92,12 @@ class GeohashStream extends Stream.Readable {
     super({ objectMode: true })
 
     this.options = options
+
+    this.shapeIsPoint = isPoint(shapeCoordinates)
+    if (this.shapeIsPoint) {
+      this.pointCoordinates = shapeCoordinates
+      return
+    }
 
     this.originalShape = isLine(shapeCoordinates)
       ? turfLine(shapeCoordinates)
@@ -145,6 +150,12 @@ class GeohashStream extends Stream.Readable {
   }
 
   _read(size) {
+    if (this.shapeIsPoint) {
+      this.push([ngeohash.encode(...this.pointCoordinates, this.options.precision)])
+      this.push(null)
+      return
+    }
+
     const rowGeohashes = this.processNextRow()
     if (rowGeohashes !== null) {
       this.push(rowGeohashes) // Push data out of the stream

@@ -589,6 +589,25 @@ describe("Manual tests", () => {
     })
   })
 
+  test("Test custom writer with MultiPoint", async () => {
+    let writerWasCalled = false
+    const myCustomWriter = new Stream.Writable({
+      objectMode: true, // THIS IS IMPORTANT
+      write: (rowGeohashes, enc, callback) => {
+        writerWasCalled = true
+        expect(rowGeohashes.length).toBe(1)
+        callback()
+      },
+    })
+
+    await shape2geohash(geojsonExamples.MultiPoint, {
+      customWriter: myCustomWriter,
+      // ...other options
+    })
+
+    expect(writerWasCalled).toBe(true)
+  })
+
   test("Test minIntersect 0.5", async () => {
     const polygon = [
       [
