@@ -57,7 +57,7 @@ async function shape2geohash(shapes, options = {}) {
     return new Promise((resolve, reject) => {
       if (isPoint(shape) && options.customWriter === null) {
         // Optimization for points. No need for streams.
-        addGeohashes([ngeohash.encode(...shape, options.precision)])
+        addGeohashes([ngeohash.encode(...shape.reverse(), options.precision)])
         resolve()
         return
       }
@@ -151,7 +151,8 @@ class GeohashStream extends Stream.Readable {
 
   _read(size) {
     if (this.shapeIsPoint) {
-      this.push([ngeohash.encode(...this.pointCoordinates, this.options.precision)])
+      console.log(this.pointCoordinates)
+      this.push([ngeohash.encode(...this.pointCoordinates.reverse(), this.options.precision)])
       this.push(null)
       return
     }
