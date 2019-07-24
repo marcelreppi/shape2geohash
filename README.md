@@ -44,7 +44,7 @@ const geohashes2 = await shape2geohash([
     [13.0, 52.2],
     [13.0, 52.5], // make sure the last coordinate is equal to the first one
   ]
-], { isGeoJSON: false })
+])
 
 // returns ["u336xp", etc.]
 ```
