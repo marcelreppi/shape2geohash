@@ -1,5 +1,6 @@
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/marcelreppi/shape2geohash/master.svg?style=flat-square)](https://codecov.io/gh/marcelreppi/shape2geohash/)
 [![npm version](https://badge.fury.io/js/shape2geohash.svg)](https://badge.fury.io/js/shape2geohash)
+[![Build Status](https://travis-ci.org/marcelreppi/shape2geohash.svg?branch=master)](https://travis-ci.org/marcelreppi/shape2geohash)
 
 # shape2geohash
 
