@@ -68,3 +68,5 @@ jest-coverage-report
 .vscode
 
 codecov.sh
+
+debug.js

@@ -362,7 +362,11 @@ describe("Manual tests", () => {
   })
 
   test("Test line with hashMode 'intersect'", async () => {
-    const line = [[13.286631, 52.501994], [13.383104, 52.443386], [13.481295, 52.459287]]
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
 
     const expectedGeohashes = ["u336w", "u336x", "u336r", "u33d2", "u33d3", "u33d6"]
 
@@ -380,7 +384,11 @@ describe("Manual tests", () => {
   })
 
   test("Test line with hashMode 'border'", async () => {
-    const line = [[13.286631, 52.501994], [13.383104, 52.443386], [13.481295, 52.459287]]
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
 
     const expectedGeohashes = ["u336w", "u336x", "u336r", "u33d2", "u33d3", "u33d6"]
 
@@ -398,7 +406,11 @@ describe("Manual tests", () => {
   })
 
   test("Test line with hashMode 'insideOnly'", async () => {
-    const line = [[13.286631, 52.501994], [13.383104, 52.443386], [13.481295, 52.459287]]
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
 
     const expectedGeohashes = ["u336w", "u336x", "u336r", "u33d2", "u33d3", "u33d6"]
 
@@ -416,7 +428,11 @@ describe("Manual tests", () => {
   })
 
   test("Test line with hashMode 'envelope'", async () => {
-    const line = [[13.286631, 52.501994], [13.383104, 52.443386], [13.481295, 52.459287]]
+    const line = [
+      [13.286631, 52.501994],
+      [13.383104, 52.443386],
+      [13.481295, 52.459287],
+    ]
 
     const expectedGeohashes = [
       "u336w",
@@ -520,7 +536,10 @@ describe("Manual tests", () => {
       ],
     ]
 
-    const expectedGeohashes = [["u336x", "u33d8", "u33d9"], ["u336r", "u33d2", "u33d3"]]
+    const expectedGeohashes = [
+      ["u336x", "u33d8", "u33d9"],
+      ["u336r", "u33d2", "u33d3"],
+    ]
 
     let i = 0
     const myCustomWriter = new Stream.Writable({
@@ -598,6 +617,23 @@ describe("Manual tests", () => {
     expect(geohashes.length).toBe(2)
     expect(geohashes[0]).toBe(testGeohashes[0])
     expect(geohashes[1]).toBe(testGeohashes[1])
+  })
+
+  test("Test very small line", async () => {
+    // From Github Issue #2
+    const testGeohashes = ["ez3cys"]
+    const geohashes = await shape2geohash({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [-8.49468397061034, 41.1146472476304],
+          [-8.49468566805409, 41.1146850333377],
+        ],
+      },
+    })
+    expect(geohashes.length).toBe(1)
+    expect(geohashes[0]).toBe(testGeohashes[0])
   })
 })
 

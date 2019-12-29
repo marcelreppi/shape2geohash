@@ -186,6 +186,11 @@ class GeohashStream extends Stream.Readable {
       if (this.originalShape.geometry.type === "LineString") {
         const lineSegments = turfLineSplit(this.originalShape, rowPolygon).features
 
+        if (lineSegments.length === 0) {
+          // Line is completely inside rowPolygon so just add the originalShape
+          lineSegments.push(this.originalShape)
+        }
+
         let evenPairs
         const firstPointOfFirstSegment = lineSegments[0].geometry.coordinates[0]
         if (turfBooleanPointInPolygon(firstPointOfFirstSegment, rowPolygon)) {
