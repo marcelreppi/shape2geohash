@@ -63,10 +63,8 @@ typings/
 test/**/data.js
 test/**/debug.js
 
-jest-coverage-report
+coverage
 
 .vscode
 
 codecov.sh
-
-debug.js

@@ -31,7 +31,7 @@
   "homepage": "https://github.com/marcelreppi/shape2geohash#readme",
   "jest": {
     "collectCoverage": true,
-    "coverageDirectory": "./test/jest-coverage-report",
+    "coverageDirectory": "./test/coverage",
     "collectCoverageFrom": [
       "./index.js",
       "./helpers.js"
