@@ -1,12 +1,12 @@
 {
   "name": "shape2geohash",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Turns any GeoJSON shape into a list of geohashes",
   "main": "index.js",
   "scripts": {
     "test": "jest",
     "jest": "jest --watch",
-    "testCoverage": "jest --coverage"
+    "jest:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
