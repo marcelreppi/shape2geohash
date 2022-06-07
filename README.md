@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/marcelreppi/shape2geohash/branch/master/graph/badge.svg)](https://codecov.io/gh/marcelreppi/shape2geohash)
+[![codecov](https://codecov.io/gh/marcelreppi/shape2geohash/branch/main/graph/badge.svg?token=ZH99xC7T3v)](https://codecov.io/gh/marcelreppi/shape2geohash)
 [![npm version](https://badge.fury.io/js/shape2geohash.svg)](https://badge.fury.io/js/shape2geohash)
 [![Build Status](https://travis-ci.org/marcelreppi/shape2geohash.svg?branch=master)](https://travis-ci.org/marcelreppi/shape2geohash)
 
