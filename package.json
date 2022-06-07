@@ -23,7 +23,11 @@
     "point",
     "point2geohash"
   ],
-  "author": "",
+  "author": {
+    "name": "Marcel Reppenhagen",
+    "email": "marcelreppi@gmail.com",
+    "url": "https://reppenhagen.space"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/marcelreppi/shape2geohash/issues"
