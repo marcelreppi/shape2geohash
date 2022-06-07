@@ -6,8 +6,7 @@ const { polygon: turfPolygon, multiPolygon: turfMultiPolygon } = require("@turf/
 const ngeohash = require("ngeohash")
 
 const berlin = require("./berlin.json")
-const shape2geohash = require("../index")
-const helpers = require("../helpers")
+const shape2geohash = require("../src/index")
 const geojsonExamples = require("./geojsonExamples")
 
 const berlinPolygon = berlin.fields.geo_shape
@@ -19,7 +18,7 @@ function checkForDuplicates(geohashes) {
   if (geohashes.length !== geohashesAsSet.size) {
     const unique = []
     const duplicates = []
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       if (unique.includes(gh)) {
         duplicates.push(gh)
       } else {
@@ -131,7 +130,7 @@ describe("Berlin tests", () => {
       hashMode: "insideOnly",
       precision: 5,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -177,7 +176,7 @@ describe("Manual tests", () => {
     const geohashes = await shape2geohash(polygon, {
       precision: expectedGeohashes[0].length,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -218,7 +217,7 @@ describe("Manual tests", () => {
     const geohashes = await shape2geohash(multiPolygon, {
       precision: expectedGeohashes[0].length,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -258,7 +257,7 @@ describe("Manual tests", () => {
     const geohashes = await shape2geohash(polygon, {
       precision: expectedGeohashes[0].length,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -292,7 +291,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "border",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -318,7 +317,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "insideOnly",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -352,7 +351,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "envelope",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -374,7 +373,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "intersect",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -396,7 +395,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "border",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -418,7 +417,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "insideOnly",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -451,7 +450,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       hashMode: "envelope",
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -483,7 +482,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       minIntersect: 0.5,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -515,7 +514,7 @@ describe("Manual tests", () => {
       precision: expectedGeohashes[0].length,
       minIntersect: 0.25,
     })
-    geohashes.forEach(gh => {
+    geohashes.forEach((gh) => {
       expect(expectedGeohashes).toContain(gh)
     })
     expect(geohashes.length).toBe(expectedGeohashes.length)
@@ -545,7 +544,7 @@ describe("Manual tests", () => {
     const myCustomWriter = new Stream.Writable({
       objectMode: true, // THIS IS IMPORTANT
       write: (rowGeohashes, enc, callback) => {
-        rowGeohashes.forEach(gh => {
+        rowGeohashes.forEach((gh) => {
           expect(expectedGeohashes[i]).toContain(gh)
         })
         expect(rowGeohashes.length).toBe(expectedGeohashes[i].length)

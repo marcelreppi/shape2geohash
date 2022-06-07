@@ -1,4 +1,4 @@
-const helpers = require("../helpers")
+const helpers = require("../src/helpers")
 const geojsonExamples = require("./geojsonExamples")
 
 describe("Test GeoJSON parsing", () => {

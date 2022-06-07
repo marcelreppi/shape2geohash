@@ -33,8 +33,7 @@
     "collectCoverage": true,
     "coverageDirectory": "./test/coverage",
     "collectCoverageFrom": [
-      "./index.js",
-      "./helpers.js"
+      "./src/**/*.js"
     ]
   },
   "dependencies": {
