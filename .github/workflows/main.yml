@@ -1,0 +1,16 @@
+name: Main Workflow
+on:
+  push:
+    branches: $default-branch
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate coverage report
+        run: npm run jest:coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3.1.0
