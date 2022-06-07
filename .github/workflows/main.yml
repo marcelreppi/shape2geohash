@@ -2,7 +2,7 @@ name: Main Workflow
 on:
   push:
     branches:
-      - $default-branch
+      - main
 jobs:
   main:
     runs-on: ubuntu-latest
