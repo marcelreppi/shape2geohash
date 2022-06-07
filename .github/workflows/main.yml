@@ -1,0 +1,16 @@
+name: Main Workflow
+on:
+  push:
+    branches: "*"
+jobs:
+  codecov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+      - name: Install codecov
+        run: npm i -g codecov
+      - name: Run codecov
+        run: codecov
