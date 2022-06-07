@@ -6,7 +6,7 @@ const { polygon: turfPolygon, multiPolygon: turfMultiPolygon } = require("@turf/
 const ngeohash = require("ngeohash")
 
 const berlin = require("./berlin.json")
-const shape2geohash = require("../src/index")
+const shape2geohash = require("../index")
 const geojsonExamples = require("./geojsonExamples")
 
 const berlinPolygon = berlin.fields.geo_shape
